@@ -1,6 +1,5 @@
 import HandoffPlayer from "@/components/HandoffPlayer";
 
-export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
 
 type SearchParams = Promise<{
@@ -42,58 +41,10 @@ export default async function RecipientHandoffPage({
     );
   }
 
-  const apiKey = process.env.ELEVENLABS_API_KEY;
-
-  if (!apiKey) {
-    return (
-      <main className="min-h-screen bg-slate-950 px-6 py-12 text-white">
-        <div className="mx-auto max-w-xl">
-          <h1 className="text-3xl font-semibold">Handoff unavailable</h1>
-
-          <p className="mt-4 text-slate-400">
-            The voice service is not configured.
-          </p>
-        </div>
-      </main>
-    );
-  }
-
-  const response = await fetch(
-    `https://api.elevenlabs.io/v1/dubbing/project/${encodeURIComponent(
+  const spanishAudioUrl =
+    `/api/handoff/spanish?projectId=${encodeURIComponent(
       projectId,
-    )}/language/${encodeURIComponent(languageId)}`,
-    {
-      headers: {
-        "xi-api-key": apiKey,
-      },
-      cache: "no-store",
-    },
-  );
-
-  if (!response.ok) {
-    return (
-      <main className="min-h-screen bg-slate-950 px-6 py-12 text-white">
-        <div className="mx-auto max-w-xl">
-          <p className="text-sm font-semibold uppercase tracking-[0.25em] text-emerald-400">
-            Handoff
-          </p>
-
-          <h1 className="mt-4 text-3xl font-semibold">
-            We could not load this handoff.
-          </h1>
-
-          <p className="mt-4 text-slate-400">
-            Please try scanning the QR code again.
-          </p>
-        </div>
-      </main>
-    );
-  }
-
-  const data = await response.json();
-
-  const spanishAudioUrl = data?.outputs?.lossless_audio as string | undefined;
-  const status = data?.status || "unknown";
+    )}&languageId=${encodeURIComponent(languageId)}`;
 
   return (
     <main className="min-h-screen bg-slate-950 px-6 py-12 text-white">
@@ -122,29 +73,15 @@ export default async function RecipientHandoffPage({
             </div>
           </div>
 
-          {status === "completed" && spanishAudioUrl ? (
-            <>
-              <HandoffPlayer
-                originalAudioUrl={originalAudioUrl}
-                spanishAudioUrl={spanishAudioUrl}
-              />
+          <HandoffPlayer
+            originalAudioUrl={originalAudioUrl}
+            spanishAudioUrl={spanishAudioUrl}
+          />
 
-              <p className="mt-7 border-t border-slate-800 pt-6 text-sm leading-6 text-slate-500">
-                This handoff contains practical information shared by the
-                person who prepared this specific appliance.
-              </p>
-            </>
-          ) : (
-            <div className="rounded-2xl border border-amber-500/20 bg-amber-500/10 p-4">
-              <p className="font-medium text-amber-200">
-                This handoff is still being prepared.
-              </p>
-
-              <p className="mt-2 text-sm text-amber-200/70">
-                Refresh this page in a moment.
-              </p>
-            </div>
-          )}
+          <p className="mt-7 border-t border-slate-800 pt-6 text-sm leading-6 text-slate-500">
+            This handoff contains practical information shared by the person
+            who prepared this specific appliance.
+          </p>
         </section>
 
         <p className="mt-8 text-center text-sm text-slate-600">
