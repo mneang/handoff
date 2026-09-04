@@ -84,7 +84,7 @@ export default async function RecipientHandoffPage({
   const data = await response.json();
 
   const audioUrl = data?.outputs?.lossless_audio as string | undefined;
-  const targetLanguage = data?.target_language || "Recipient language";
+  const targetLanguage = "Spanish";
   const status = data?.status || "unknown";
 
   return (

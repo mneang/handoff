@@ -252,7 +252,7 @@ export default function Home() {
             </p>
 
             <div className="rounded-xl border border-slate-700 bg-slate-950 px-4 py-3">
-              🇪🇸 Spanish
+              Español (Spanish)
             </div>
           </div>
 
@@ -380,7 +380,7 @@ export default function Home() {
                   />
                 </div>
 
-                <div className="mt-5">
+                <div className="mt-5 flex flex-wrap gap-3">
                   <a
                     href={recipientUrl}
                     target="_blank"
@@ -388,6 +388,15 @@ export default function Home() {
                     className="inline-flex rounded-xl border border-emerald-500/30 px-4 py-3 text-sm font-semibold text-emerald-300 transition hover:bg-emerald-500/10"
                   >
                     Open recipient view ↗
+                  </a>
+
+                  <a
+                    href={recipientUrl.replace("/h?", "/tag?")}
+                    target="_blank"
+                    rel="noreferrer"
+                    className="inline-flex rounded-xl bg-emerald-400 px-4 py-3 text-sm font-semibold text-slate-950 transition hover:bg-emerald-300"
+                  >
+                    Open printable tag ↗
                   </a>
                 </div>
               </div>
