@@ -104,15 +104,35 @@ export default function Home() {
     }
 
     setStatus("dubbing");
-    setMessage("Uploading your handoff to ElevenLabs...");
+    setMessage("Saving the original handoff...");
     setRecipientUrl(null);
 
     try {
-      const formData = new FormData();
-
       const file = new File([recordingBlob], "handoff-recording.webm", {
         type: recordingBlob.type || "audio/webm",
       });
+
+      const originalFormData = new FormData();
+      originalFormData.append("file", file);
+
+      const uploadResponse = await fetch("/api/media/upload", {
+        method: "POST",
+        body: originalFormData,
+      });
+
+      const uploadData = await uploadResponse.json();
+
+      if (!uploadResponse.ok || !uploadData.url) {
+        throw new Error(
+          uploadData?.error || "Could not save the original handoff.",
+        );
+      }
+
+      const originalAudioUrl = uploadData.url as string;
+
+      setMessage("Original saved. Creating the Spanish handoff...");
+
+      const formData = new FormData();
 
       formData.append("file", file);
       formData.append("targetLanguage", "es");
@@ -169,6 +189,10 @@ export default function Home() {
           handoffUrl.searchParams.set(
             "appliance",
             appliance.trim() || "Refurbished appliance",
+          );
+          handoffUrl.searchParams.set(
+            "originalAudioUrl",
+            originalAudioUrl,
           );
 
           setDubbedAudioUrl(statusData.audioUrl);

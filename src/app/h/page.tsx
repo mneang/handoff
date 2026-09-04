@@ -1,3 +1,5 @@
+import HandoffPlayer from "@/components/HandoffPlayer";
+
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
 
@@ -5,6 +7,7 @@ type SearchParams = Promise<{
   projectId?: string;
   languageId?: string;
   appliance?: string;
+  originalAudioUrl?: string;
 }>;
 
 export default async function RecipientHandoffPage({
@@ -16,9 +19,10 @@ export default async function RecipientHandoffPage({
 
   const projectId = params.projectId;
   const languageId = params.languageId;
+  const originalAudioUrl = params.originalAudioUrl;
   const appliance = params.appliance || "Refurbished appliance";
 
-  if (!projectId || !languageId) {
+  if (!projectId || !languageId || !originalAudioUrl) {
     return (
       <main className="min-h-screen bg-slate-950 px-6 py-12 text-white">
         <div className="mx-auto max-w-xl">
@@ -29,6 +33,10 @@ export default async function RecipientHandoffPage({
           <h1 className="mt-4 text-3xl font-semibold">
             This handoff link is incomplete.
           </h1>
+
+          <p className="mt-4 text-slate-400">
+            Please scan the HANDOFF tag again.
+          </p>
         </div>
       </main>
     );
@@ -41,6 +49,7 @@ export default async function RecipientHandoffPage({
       <main className="min-h-screen bg-slate-950 px-6 py-12 text-white">
         <div className="mx-auto max-w-xl">
           <h1 className="text-3xl font-semibold">Handoff unavailable</h1>
+
           <p className="mt-4 text-slate-400">
             The voice service is not configured.
           </p>
@@ -83,8 +92,7 @@ export default async function RecipientHandoffPage({
 
   const data = await response.json();
 
-  const audioUrl = data?.outputs?.lossless_audio as string | undefined;
-  const targetLanguage = "Spanish";
+  const spanishAudioUrl = data?.outputs?.lossless_audio as string | undefined;
   const status = data?.status || "unknown";
 
   return (
@@ -104,29 +112,26 @@ export default async function RecipientHandoffPage({
         </p>
 
         <section className="mt-8 rounded-3xl border border-slate-800 bg-slate-900 p-6 shadow-2xl sm:p-8">
-          <div className="mb-6 flex items-center justify-between gap-4">
-            <div>
-              <p className="text-xs font-semibold uppercase tracking-wider text-slate-500">
-                Spoken handoff
-              </p>
+          <div className="mb-7">
+            <p className="text-xs font-semibold uppercase tracking-wider text-slate-500">
+              Voice handoff
+            </p>
 
-              <p className="mt-1 text-lg font-semibold uppercase">
-                {targetLanguage}
-              </p>
-            </div>
-
-            <span className="rounded-full bg-emerald-500/10 px-3 py-1 text-sm font-medium text-emerald-300">
+            <div className="mt-3 inline-flex rounded-full bg-emerald-500/10 px-3 py-1 text-sm font-medium text-emerald-300">
               Prepared with care
-            </span>
+            </div>
           </div>
 
-          {status === "completed" && audioUrl ? (
+          {status === "completed" && spanishAudioUrl ? (
             <>
-              <audio className="w-full" controls src={audioUrl} />
+              <HandoffPlayer
+                originalAudioUrl={originalAudioUrl}
+                spanishAudioUrl={spanishAudioUrl}
+              />
 
-              <p className="mt-6 text-sm leading-6 text-slate-500">
-                This voice handoff contains practical information shared by the
-                volunteer who prepared this specific appliance.
+              <p className="mt-7 border-t border-slate-800 pt-6 text-sm leading-6 text-slate-500">
+                This handoff contains practical information shared by the
+                person who prepared this specific appliance.
               </p>
             </>
           ) : (

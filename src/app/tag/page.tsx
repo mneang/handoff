@@ -9,6 +9,7 @@ type SearchParams = Promise<{
   projectId?: string;
   languageId?: string;
   appliance?: string;
+  originalAudioUrl?: string;
 }>;
 
 export default async function HandoffTagPage({
@@ -20,9 +21,10 @@ export default async function HandoffTagPage({
 
   const projectId = params.projectId;
   const languageId = params.languageId;
+  const originalAudioUrl = params.originalAudioUrl;
   const appliance = params.appliance || "Refurbished appliance";
 
-  if (!projectId || !languageId) {
+  if (!projectId || !languageId || !originalAudioUrl) {
     return (
       <main className="min-h-screen bg-slate-100 p-8 text-slate-950">
         <div className="mx-auto max-w-md">
@@ -49,6 +51,7 @@ export default async function HandoffTagPage({
   recipientUrl.searchParams.set("projectId", projectId);
   recipientUrl.searchParams.set("languageId", languageId);
   recipientUrl.searchParams.set("appliance", appliance);
+  recipientUrl.searchParams.set("originalAudioUrl", originalAudioUrl);
 
   const qrSource = `/api/qr?data=${encodeURIComponent(
     recipientUrl.toString(),
