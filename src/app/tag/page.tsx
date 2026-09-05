@@ -2,14 +2,12 @@ import Image from "next/image";
 import { headers } from "next/headers";
 import PrintButton from "@/components/PrintButton";
 
-export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
 
 type SearchParams = Promise<{
-  projectId?: string;
-  languageId?: string;
   appliance?: string;
   originalAudioUrl?: string;
+  spanishAudioUrl?: string;
 }>;
 
 export default async function HandoffTagPage({
@@ -19,16 +17,20 @@ export default async function HandoffTagPage({
 }) {
   const params = await searchParams;
 
-  const projectId = params.projectId;
-  const languageId = params.languageId;
-  const originalAudioUrl = params.originalAudioUrl;
-  const appliance = params.appliance || "Refurbished appliance";
+  const appliance =
+    params.appliance || "Refurbished appliance";
 
-  if (!projectId || !languageId || !originalAudioUrl) {
+  const originalAudioUrl = params.originalAudioUrl;
+  const spanishAudioUrl = params.spanishAudioUrl;
+
+  if (!originalAudioUrl || !spanishAudioUrl) {
     return (
       <main className="min-h-screen bg-slate-100 p-8 text-slate-950">
         <div className="mx-auto max-w-md">
-          <h1 className="text-2xl font-semibold">Invalid HANDOFF tag</h1>
+          <h1 className="text-2xl font-semibold">
+            Invalid HANDOFF tag
+          </h1>
+
           <p className="mt-3 text-slate-600">
             This tag is missing its handoff information.
           </p>
@@ -38,20 +40,38 @@ export default async function HandoffTagPage({
   }
 
   const headerStore = await headers();
+
   const host = headerStore.get("host");
-  const forwardedProto = headerStore.get("x-forwarded-proto");
-  const protocol = forwardedProto || "http";
+  const forwardedProto =
+    headerStore.get("x-forwarded-proto");
+
+  const protocol = forwardedProto || "https";
 
   if (!host) {
-    throw new Error("Could not determine the HANDOFF host.");
+    throw new Error(
+      "Could not determine the HANDOFF host.",
+    );
   }
 
-  const recipientUrl = new URL("/h", `${protocol}://${host}`);
+  const recipientUrl = new URL(
+    "/h",
+    `${protocol}://${host}`,
+  );
 
-  recipientUrl.searchParams.set("projectId", projectId);
-  recipientUrl.searchParams.set("languageId", languageId);
-  recipientUrl.searchParams.set("appliance", appliance);
-  recipientUrl.searchParams.set("originalAudioUrl", originalAudioUrl);
+  recipientUrl.searchParams.set(
+    "appliance",
+    appliance,
+  );
+
+  recipientUrl.searchParams.set(
+    "originalAudioUrl",
+    originalAudioUrl,
+  );
+
+  recipientUrl.searchParams.set(
+    "spanishAudioUrl",
+    spanishAudioUrl,
+  );
 
   const qrSource = `/api/qr?data=${encodeURIComponent(
     recipientUrl.toString(),
@@ -64,9 +84,9 @@ export default async function HandoffTagPage({
           <PrintButton />
         </div>
 
-        <section className="rounded-3xl border-2 border-slate-900 bg-white p-8 text-center shadow-xl print:shadow-none">
+        <section className="rounded-3xl border-2 border-slate-900 bg-white p-8 text-center shadow-xl print:rounded-none print:shadow-none">
           <p className="text-sm font-bold uppercase tracking-[0.28em]">
-            Handoff
+            HANDOFF
           </p>
 
           <div className="mx-auto my-6 h-px bg-slate-200" />
@@ -94,13 +114,13 @@ export default async function HandoffTagPage({
             Scan to hear your handoff
           </h2>
 
-          <p className="mt-2 text-base text-slate-600">
-            Español (Spanish)
+          <p className="mt-2 text-sm text-slate-600">
+            English · Español (Spanish)
           </p>
 
           <p className="mx-auto mt-5 max-w-xs text-sm leading-6 text-slate-500">
-            Hear useful information from the person who prepared this specific
-            appliance.
+            Hear useful information from the person who
+            prepared this specific appliance.
           </p>
 
           <div className="mx-auto my-7 h-px bg-slate-200" />

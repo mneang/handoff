@@ -1,12 +1,9 @@
 import HandoffPlayer from "@/components/HandoffPlayer";
 
-export const dynamic = "force-dynamic";
-
 type SearchParams = Promise<{
-  projectId?: string;
-  languageId?: string;
   appliance?: string;
   originalAudioUrl?: string;
+  spanishAudioUrl?: string;
 }>;
 
 export default async function RecipientHandoffPage({
@@ -16,17 +13,18 @@ export default async function RecipientHandoffPage({
 }) {
   const params = await searchParams;
 
-  const projectId = params.projectId;
-  const languageId = params.languageId;
-  const originalAudioUrl = params.originalAudioUrl;
-  const appliance = params.appliance || "Refurbished appliance";
+  const appliance =
+    params.appliance || "Refurbished appliance";
 
-  if (!projectId || !languageId || !originalAudioUrl) {
+  const originalAudioUrl = params.originalAudioUrl;
+  const spanishAudioUrl = params.spanishAudioUrl;
+
+  if (!originalAudioUrl || !spanishAudioUrl) {
     return (
       <main className="min-h-screen bg-slate-950 px-6 py-12 text-white">
         <div className="mx-auto max-w-xl">
           <p className="text-sm font-semibold uppercase tracking-[0.25em] text-emerald-400">
-            Handoff
+            HANDOFF
           </p>
 
           <h1 className="mt-4 text-3xl font-semibold">
@@ -41,16 +39,11 @@ export default async function RecipientHandoffPage({
     );
   }
 
-  const spanishAudioUrl =
-    `/api/handoff/spanish?projectId=${encodeURIComponent(
-      projectId,
-    )}&languageId=${encodeURIComponent(languageId)}`;
-
   return (
-    <main className="min-h-screen bg-slate-950 px-6 py-12 text-white">
+    <main className="min-h-screen bg-slate-950 px-5 py-8 text-white sm:px-6 sm:py-12">
       <div className="mx-auto max-w-xl">
         <p className="text-sm font-semibold uppercase tracking-[0.25em] text-emerald-400">
-          Handoff
+          HANDOFF
         </p>
 
         <h1 className="mt-4 text-4xl font-semibold tracking-tight">
@@ -58,11 +51,11 @@ export default async function RecipientHandoffPage({
         </h1>
 
         <p className="mt-4 text-lg leading-8 text-slate-400">
-          A message from the person who prepared this appliance for its next
-          home.
+          A message from the person who prepared this appliance
+          for its next home.
         </p>
 
-        <section className="mt-8 rounded-3xl border border-slate-800 bg-slate-900 p-6 shadow-2xl sm:p-8">
+        <section className="mt-7 rounded-3xl border border-slate-800 bg-slate-900 p-5 shadow-2xl sm:mt-8 sm:p-8">
           <div className="mb-7">
             <p className="text-xs font-semibold uppercase tracking-wider text-slate-500">
               Voice handoff
@@ -79,13 +72,14 @@ export default async function RecipientHandoffPage({
           />
 
           <p className="mt-7 border-t border-slate-800 pt-6 text-sm leading-6 text-slate-500">
-            This handoff contains practical information shared by the person
-            who prepared this specific appliance.
+            This handoff contains practical information shared
+            by the person who prepared this specific appliance.
           </p>
         </section>
 
         <p className="mt-8 text-center text-sm text-slate-600">
-          Don&apos;t just give the appliance. Pass on the know-how.
+          Don&apos;t just give the appliance. Pass on the
+          know-how.
         </p>
       </div>
     </main>

@@ -262,6 +262,38 @@ export default function Home() {
           statusData.status === "completed" &&
           statusData.audioUrl
         ) {
+          setMessage("Spanish handoff created. Saving it for the recipient...");
+
+          const spanishSaveResponse = await fetch(
+            "/api/media/spanish",
+            {
+              method: "POST",
+              headers: {
+                "Content-Type": "application/json",
+              },
+              body: JSON.stringify({
+                projectId,
+                languageId,
+              }),
+            },
+          );
+
+          const spanishSaveData =
+            await spanishSaveResponse.json();
+
+          if (
+            !spanishSaveResponse.ok ||
+            !spanishSaveData.url
+          ) {
+            throw new Error(
+              spanishSaveData?.error ||
+                "Could not save the Spanish handoff.",
+            );
+          }
+
+          const spanishAudioUrl =
+            spanishSaveData.url as string;
+
           const applianceName =
             appliance.trim() || "Refurbished appliance";
 
@@ -271,16 +303,6 @@ export default function Home() {
           );
 
           handoffUrl.searchParams.set(
-            "projectId",
-            projectId,
-          );
-
-          handoffUrl.searchParams.set(
-            "languageId",
-            languageId,
-          );
-
-          handoffUrl.searchParams.set(
             "appliance",
             applianceName,
           );
@@ -288,6 +310,11 @@ export default function Home() {
           handoffUrl.searchParams.set(
             "originalAudioUrl",
             originalAudioUrl,
+          );
+
+          handoffUrl.searchParams.set(
+            "spanishAudioUrl",
+            spanishAudioUrl,
           );
 
           const printableTagUrl = new URL(
@@ -296,16 +323,6 @@ export default function Home() {
           );
 
           printableTagUrl.searchParams.set(
-            "projectId",
-            projectId,
-          );
-
-          printableTagUrl.searchParams.set(
-            "languageId",
-            languageId,
-          );
-
-          printableTagUrl.searchParams.set(
             "appliance",
             applianceName,
           );
@@ -315,7 +332,12 @@ export default function Home() {
             originalAudioUrl,
           );
 
-          setDubbedAudioUrl(statusData.audioUrl);
+          printableTagUrl.searchParams.set(
+            "spanishAudioUrl",
+            spanishAudioUrl,
+          );
+
+          setDubbedAudioUrl(spanishAudioUrl);
           setRecipientUrl(handoffUrl.toString());
           setTagUrl(printableTagUrl.toString());
 
