@@ -33,6 +33,14 @@ export default function Home() {
   const [recordingSeconds, setRecordingSeconds] = useState(0);
   const [message, setMessage] = useState("");
 
+  const [savedOriginalAudioUrl, setSavedOriginalAudioUrl] =
+    useState<string | null>(null);
+
+  const [completedDub, setCompletedDub] = useState<{
+    projectId: string;
+    languageId: string;
+  } | null>(null);
+
   const mediaRecorderRef = useRef<MediaRecorder | null>(null);
   const mediaStreamRef = useRef<MediaStream | null>(null);
   const chunksRef = useRef<Blob[]>([]);
@@ -58,6 +66,8 @@ export default function Home() {
       setDubbedAudioUrl(null);
       setRecipientUrl(null);
       setTagUrl(null);
+      setSavedOriginalAudioUrl(null);
+      setCompletedDub(null);
       setProcessStage("idle");
       setRecordingSeconds(0);
 
@@ -163,15 +173,122 @@ export default function Home() {
     }
   }
 
+  async function finalizeHandoff(
+    projectId: string,
+    languageId: string,
+    originalAudioUrl: string,
+    applianceName: string,
+  ) {
+    setMessage(
+      "Spanish handoff created. Saving it for the recipient...",
+    );
+
+    const spanishSaveResponse = await fetch(
+      "/api/media/spanish",
+      {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          projectId,
+          languageId,
+        }),
+      },
+    );
+
+    const spanishSaveData =
+      await spanishSaveResponse.json();
+
+    if (
+      !spanishSaveResponse.ok ||
+      !spanishSaveData.url
+    ) {
+      throw new Error(
+        spanishSaveData?.error ||
+          "Could not save the Spanish handoff.",
+      );
+    }
+
+    const spanishAudioUrl =
+      spanishSaveData.url as string;
+
+    const handoffUrl = new URL(
+      "/h",
+      window.location.origin,
+    );
+
+    handoffUrl.searchParams.set(
+      "appliance",
+      applianceName,
+    );
+
+    handoffUrl.searchParams.set(
+      "originalAudioUrl",
+      originalAudioUrl,
+    );
+
+    handoffUrl.searchParams.set(
+      "spanishAudioUrl",
+      spanishAudioUrl,
+    );
+
+    const printableTagUrl = new URL(
+      "/tag",
+      window.location.origin,
+    );
+
+    printableTagUrl.searchParams.set(
+      "appliance",
+      applianceName,
+    );
+
+    printableTagUrl.searchParams.set(
+      "originalAudioUrl",
+      originalAudioUrl,
+    );
+
+    printableTagUrl.searchParams.set(
+      "spanishAudioUrl",
+      spanishAudioUrl,
+    );
+
+    setDubbedAudioUrl(spanishAudioUrl);
+    setRecipientUrl(handoffUrl.toString());
+    setTagUrl(printableTagUrl.toString());
+
+    setProcessStage("ready");
+    setStatus("completed");
+
+    setMessage(
+      "Your HANDOFF is ready to travel with the appliance.",
+    );
+  }
+
   async function createHandoff() {
     if (!recordingBlob) {
+      setStatus("error");
       setMessage("Record a handoff first.");
       return;
     }
 
+    const applianceName = appliance.trim();
+
+    if (!applianceName) {
+      setStatus("error");
+      setMessage("Add an appliance name before creating the HANDOFF.");
+      return;
+    }
+
+    if (recordingSeconds < 3) {
+      setStatus("error");
+      setMessage(
+        "The recording is too short. Record at least 3 seconds so the recipient gets a useful handoff.",
+      );
+      return;
+    }
+
     setStatus("dubbing");
-    setProcessStage("saving");
-    setMessage("Saving the original handoff...");
     setRecipientUrl(null);
     setTagUrl(null);
 
@@ -184,37 +301,69 @@ export default function Home() {
         },
       );
 
-      const originalFormData = new FormData();
-      originalFormData.append("file", file);
+      let originalAudioUrl = savedOriginalAudioUrl;
 
-      const uploadResponse = await fetch("/api/media/upload", {
-        method: "POST",
-        body: originalFormData,
-      });
+      if (!originalAudioUrl) {
+        setProcessStage("saving");
+        setMessage("Saving the original handoff...");
 
-      const uploadData = await uploadResponse.json();
+        const originalFormData = new FormData();
+        originalFormData.append("file", file);
 
-      if (!uploadResponse.ok || !uploadData.url) {
-        throw new Error(
-          uploadData?.error ||
-            "Could not save the original handoff.",
+        const uploadResponse = await fetch(
+          "/api/media/upload",
+          {
+            method: "POST",
+            body: originalFormData,
+          },
         );
+
+        const uploadData = await uploadResponse.json();
+
+        if (!uploadResponse.ok || !uploadData.url) {
+          throw new Error(
+            uploadData?.error ||
+              "Could not save the original handoff.",
+          );
+        }
+
+        originalAudioUrl = uploadData.url as string;
+        setSavedOriginalAudioUrl(originalAudioUrl);
       }
 
-      const originalAudioUrl = uploadData.url as string;
+      if (completedDub) {
+        setProcessStage("dubbing");
+        setMessage(
+          "Voice handoff already created. Finishing your HANDOFF...",
+        );
+
+        await finalizeHandoff(
+          completedDub.projectId,
+          completedDub.languageId,
+          originalAudioUrl,
+          applianceName,
+        );
+
+        return;
+      }
 
       setProcessStage("dubbing");
-      setMessage("Creating the Spanish handoff with ElevenLabs...");
+      setMessage(
+        "Creating the Spanish handoff with ElevenLabs...",
+      );
 
       const formData = new FormData();
 
       formData.append("file", file);
       formData.append("targetLanguage", "es");
 
-      const startResponse = await fetch("/api/dubbing/start", {
-        method: "POST",
-        body: formData,
-      });
+      const startResponse = await fetch(
+        "/api/dubbing/start",
+        {
+          method: "POST",
+          body: formData,
+        },
+      );
 
       const startData = await startResponse.json();
 
@@ -262,90 +411,16 @@ export default function Home() {
           statusData.status === "completed" &&
           statusData.audioUrl
         ) {
-          setMessage("Spanish handoff created. Saving it for the recipient...");
+          setCompletedDub({
+            projectId,
+            languageId,
+          });
 
-          const spanishSaveResponse = await fetch(
-            "/api/media/spanish",
-            {
-              method: "POST",
-              headers: {
-                "Content-Type": "application/json",
-              },
-              body: JSON.stringify({
-                projectId,
-                languageId,
-              }),
-            },
-          );
-
-          const spanishSaveData =
-            await spanishSaveResponse.json();
-
-          if (
-            !spanishSaveResponse.ok ||
-            !spanishSaveData.url
-          ) {
-            throw new Error(
-              spanishSaveData?.error ||
-                "Could not save the Spanish handoff.",
-            );
-          }
-
-          const spanishAudioUrl =
-            spanishSaveData.url as string;
-
-          const applianceName =
-            appliance.trim() || "Refurbished appliance";
-
-          const handoffUrl = new URL(
-            "/h",
-            window.location.origin,
-          );
-
-          handoffUrl.searchParams.set(
-            "appliance",
-            applianceName,
-          );
-
-          handoffUrl.searchParams.set(
-            "originalAudioUrl",
+          await finalizeHandoff(
+            projectId,
+            languageId,
             originalAudioUrl,
-          );
-
-          handoffUrl.searchParams.set(
-            "spanishAudioUrl",
-            spanishAudioUrl,
-          );
-
-          const printableTagUrl = new URL(
-            "/tag",
-            window.location.origin,
-          );
-
-          printableTagUrl.searchParams.set(
-            "appliance",
             applianceName,
-          );
-
-          printableTagUrl.searchParams.set(
-            "originalAudioUrl",
-            originalAudioUrl,
-          );
-
-          printableTagUrl.searchParams.set(
-            "spanishAudioUrl",
-            spanishAudioUrl,
-          );
-
-          setDubbedAudioUrl(spanishAudioUrl);
-          setRecipientUrl(handoffUrl.toString());
-          setTagUrl(printableTagUrl.toString());
-
-          setProcessStage("ready");
-          setStatus("completed");
-
-          setMessage(
-            "Your HANDOFF is ready to travel with the appliance.",
           );
 
           return;
@@ -371,12 +446,11 @@ export default function Home() {
       console.error(error);
 
       setStatus("error");
-      setProcessStage("idle");
 
       setMessage(
         error instanceof Error
-          ? error.message
-          : "Something went wrong while creating the handoff.",
+          ? `${error.message} Your recording is still here — you can try again.`
+          : "Something went wrong. Your recording is still here — you can try again.",
       );
     }
   }
@@ -399,6 +473,8 @@ export default function Home() {
     setDubbedAudioUrl(null);
     setRecipientUrl(null);
     setTagUrl(null);
+    setSavedOriginalAudioUrl(null);
+    setCompletedDub(null);
 
     setRecordingSeconds(0);
     setMessage("");
@@ -447,13 +523,25 @@ export default function Home() {
             className="mb-6 w-full rounded-xl border border-slate-700 bg-slate-950 px-4 py-3 text-white outline-none transition focus:border-emerald-400 disabled:opacity-60"
           />
 
-          <div className="mb-6">
-            <p className="mb-2 text-sm font-medium text-slate-300">
-              Recipient language
-            </p>
+          <div className="mb-6 grid grid-cols-2 gap-3">
+            <div>
+              <p className="mb-2 text-sm font-medium text-slate-300">
+                I&apos;m speaking
+              </p>
 
-            <div className="rounded-xl border border-slate-700 bg-slate-950 px-4 py-3">
-              Español (Spanish)
+              <div className="rounded-xl border border-slate-700 bg-slate-950 px-4 py-3 text-sm sm:text-base">
+                English
+              </div>
+            </div>
+
+            <div>
+              <p className="mb-2 text-sm font-medium text-slate-300">
+                Recipient language
+              </p>
+
+              <div className="rounded-xl border border-slate-700 bg-slate-950 px-4 py-3 text-sm sm:text-base">
+                Español (Spanish)
+              </div>
             </div>
           </div>
 
@@ -543,7 +631,9 @@ export default function Home() {
             >
               {status === "dubbing"
                 ? "Creating HANDOFF..."
-                : "Create HANDOFF"}
+                : status === "error"
+                  ? "Try again"
+                  : "Create HANDOFF"}
             </button>
           )}
 
