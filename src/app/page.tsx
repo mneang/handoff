@@ -11,7 +11,11 @@ type AppStatus =
   | "completed"
   | "error";
 
-type ProcessStage = "idle" | "saving" | "dubbing" | "ready";
+type ProcessStage =
+  | "idle"
+  | "saving"
+  | "dubbing"
+  | "ready";
 
 const MAX_RECORDING_SECONDS = 30;
 
@@ -20,19 +24,35 @@ export default function Home() {
   const [processStage, setProcessStage] =
     useState<ProcessStage>("idle");
 
-  const [appliance, setAppliance] = useState("Whirlpool Washer");
+  const [appliance, setAppliance] =
+    useState("Whirlpool Washer");
 
-  const [recordingBlob, setRecordingBlob] = useState<Blob | null>(null);
-  const [recordingUrl, setRecordingUrl] = useState<string | null>(null);
+  const [recordingBlob, setRecordingBlob] =
+    useState<Blob | null>(null);
 
-  const [dubbedAudioUrl, setDubbedAudioUrl] = useState<string | null>(null);
+  const [recordingUrl, setRecordingUrl] =
+    useState<string | null>(null);
 
-  const [recipientUrl, setRecipientUrl] = useState<string | null>(null);
-  const [tagUrl, setTagUrl] = useState<string | null>(null);
+  const [dubbedAudioUrl, setDubbedAudioUrl] =
+    useState<string | null>(null);
 
-  const [recordingSeconds, setRecordingSeconds] = useState(0);
-  const [message, setMessage] = useState("");
+  const [recipientUrl, setRecipientUrl] =
+    useState<string | null>(null);
 
+  const [tagUrl, setTagUrl] =
+    useState<string | null>(null);
+
+  const [recordingSeconds, setRecordingSeconds] =
+    useState(0);
+
+  const [message, setMessage] =
+    useState("");
+
+  /*
+   * Uruguay resilience:
+   * if a later step fails, we keep successful earlier work
+   * instead of starting the whole pipeline again.
+   */
   const [savedOriginalAudioUrl, setSavedOriginalAudioUrl] =
     useState<string | null>(null);
 
@@ -41,12 +61,20 @@ export default function Home() {
     languageId: string;
   } | null>(null);
 
-  const mediaRecorderRef = useRef<MediaRecorder | null>(null);
-  const mediaStreamRef = useRef<MediaStream | null>(null);
-  const chunksRef = useRef<Blob[]>([]);
+  const mediaRecorderRef =
+    useRef<MediaRecorder | null>(null);
 
-  const timerIntervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
-  const autoStopRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const mediaStreamRef =
+    useRef<MediaStream | null>(null);
+
+  const chunksRef =
+    useRef<Blob[]>([]);
+
+  const timerIntervalRef =
+    useRef<ReturnType<typeof setInterval> | null>(null);
+
+  const autoStopRef =
+    useRef<ReturnType<typeof setTimeout> | null>(null);
 
   function clearRecordingTimers() {
     if (timerIntervalRef.current) {
@@ -62,6 +90,8 @@ export default function Home() {
 
   async function startRecording() {
     try {
+      clearRecordingTimers();
+
       setMessage("");
       setDubbedAudioUrl(null);
       setRecipientUrl(null);
@@ -85,14 +115,17 @@ export default function Home() {
         setRecordingUrl(null);
       }
 
-      const stream = await navigator.mediaDevices.getUserMedia({
-        audio: true,
-      });
+      const stream =
+        await navigator.mediaDevices.getUserMedia({
+          audio: true,
+        });
 
       mediaStreamRef.current = stream;
 
       const preferredMimeType =
-        MediaRecorder.isTypeSupported("audio/webm;codecs=opus")
+        MediaRecorder.isTypeSupported(
+          "audio/webm;codecs=opus",
+        )
           ? "audio/webm;codecs=opus"
           : MediaRecorder.isTypeSupported("audio/webm")
             ? "audio/webm"
@@ -115,13 +148,18 @@ export default function Home() {
       recorder.onstop = () => {
         clearRecordingTimers();
 
-        const mimeType = recorder.mimeType || "audio/webm";
+        const mimeType =
+          recorder.mimeType || "audio/webm";
 
-        const blob = new Blob(chunksRef.current, {
-          type: mimeType,
-        });
+        const blob = new Blob(
+          chunksRef.current,
+          {
+            type: mimeType,
+          },
+        );
 
-        const url = URL.createObjectURL(blob);
+        const url =
+          URL.createObjectURL(blob);
 
         setRecordingBlob(blob);
         setRecordingUrl(url);
@@ -129,7 +167,9 @@ export default function Home() {
 
         mediaStreamRef.current
           ?.getTracks()
-          .forEach((track) => track.stop());
+          .forEach((track) =>
+            track.stop(),
+          );
 
         mediaStreamRef.current = null;
       };
@@ -137,19 +177,28 @@ export default function Home() {
       mediaRecorderRef.current = recorder;
 
       recorder.start();
+
       setStatus("recording");
 
-      timerIntervalRef.current = setInterval(() => {
-        setRecordingSeconds((current) =>
-          Math.min(current + 1, MAX_RECORDING_SECONDS),
-        );
-      }, 1000);
+      timerIntervalRef.current =
+        setInterval(() => {
+          setRecordingSeconds((current) =>
+            Math.min(
+              current + 1,
+              MAX_RECORDING_SECONDS,
+            ),
+          );
+        }, 1000);
 
-      autoStopRef.current = setTimeout(() => {
-        if (recorder.state === "recording") {
-          recorder.stop();
-        }
-      }, MAX_RECORDING_SECONDS * 1000);
+      autoStopRef.current =
+        setTimeout(() => {
+          if (
+            recorder.state ===
+            "recording"
+          ) {
+            recorder.stop();
+          }
+        }, MAX_RECORDING_SECONDS * 1000);
     } catch (error) {
       clearRecordingTimers();
 
@@ -166,9 +215,13 @@ export default function Home() {
   }
 
   function stopRecording() {
-    const recorder = mediaRecorderRef.current;
+    const recorder =
+      mediaRecorderRef.current;
 
-    if (recorder && recorder.state === "recording") {
+    if (
+      recorder &&
+      recorder.state === "recording"
+    ) {
       recorder.stop();
     }
   }
@@ -183,19 +236,21 @@ export default function Home() {
       "Spanish handoff created. Saving it for the recipient...",
     );
 
-    const spanishSaveResponse = await fetch(
-      "/api/media/spanish",
-      {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
+    const spanishSaveResponse =
+      await fetch(
+        "/api/media/spanish",
+        {
+          method: "POST",
+          headers: {
+            "Content-Type":
+              "application/json",
+          },
+          body: JSON.stringify({
+            projectId,
+            languageId,
+          }),
         },
-        body: JSON.stringify({
-          projectId,
-          languageId,
-        }),
-      },
-    );
+      );
 
     const spanishSaveData =
       await spanishSaveResponse.json();
@@ -213,10 +268,11 @@ export default function Home() {
     const spanishAudioUrl =
       spanishSaveData.url as string;
 
-    const handoffUrl = new URL(
-      "/h",
-      window.location.origin,
-    );
+    const handoffUrl =
+      new URL(
+        "/h",
+        window.location.origin,
+      );
 
     handoffUrl.searchParams.set(
       "appliance",
@@ -233,10 +289,11 @@ export default function Home() {
       spanishAudioUrl,
     );
 
-    const printableTagUrl = new URL(
-      "/tag",
-      window.location.origin,
-    );
+    const printableTagUrl =
+      new URL(
+        "/tag",
+        window.location.origin,
+      );
 
     printableTagUrl.searchParams.set(
       "appliance",
@@ -253,9 +310,17 @@ export default function Home() {
       spanishAudioUrl,
     );
 
-    setDubbedAudioUrl(spanishAudioUrl);
-    setRecipientUrl(handoffUrl.toString());
-    setTagUrl(printableTagUrl.toString());
+    setDubbedAudioUrl(
+      spanishAudioUrl,
+    );
+
+    setRecipientUrl(
+      handoffUrl.toString(),
+    );
+
+    setTagUrl(
+      printableTagUrl.toString(),
+    );
 
     setProcessStage("ready");
     setStatus("completed");
@@ -268,15 +333,20 @@ export default function Home() {
   async function createHandoff() {
     if (!recordingBlob) {
       setStatus("error");
-      setMessage("Record a handoff first.");
+      setMessage(
+        "Record a handoff first.",
+      );
       return;
     }
 
-    const applianceName = appliance.trim();
+    const applianceName =
+      appliance.trim();
 
     if (!applianceName) {
       setStatus("error");
-      setMessage("Add an appliance name before creating the HANDOFF.");
+      setMessage(
+        "Add an appliance name before creating the HANDOFF.",
+      );
       return;
     }
 
@@ -293,46 +363,71 @@ export default function Home() {
     setTagUrl(null);
 
     try {
-      const file = new File(
-        [recordingBlob],
-        "handoff-recording.webm",
-        {
-          type: recordingBlob.type || "audio/webm",
-        },
-      );
-
-      let originalAudioUrl = savedOriginalAudioUrl;
-
-      if (!originalAudioUrl) {
-        setProcessStage("saving");
-        setMessage("Saving the original handoff...");
-
-        const originalFormData = new FormData();
-        originalFormData.append("file", file);
-
-        const uploadResponse = await fetch(
-          "/api/media/upload",
+      const file =
+        new File(
+          [recordingBlob],
+          "handoff-recording.webm",
           {
-            method: "POST",
-            body: originalFormData,
+            type:
+              recordingBlob.type ||
+              "audio/webm",
           },
         );
 
-        const uploadData = await uploadResponse.json();
+      let originalAudioUrl:
+        string;
 
-        if (!uploadResponse.ok || !uploadData.url) {
+      if (savedOriginalAudioUrl) {
+        originalAudioUrl =
+          savedOriginalAudioUrl;
+      } else {
+        setProcessStage("saving");
+
+        setMessage(
+          "Saving the original handoff...",
+        );
+
+        const originalFormData =
+          new FormData();
+
+        originalFormData.append(
+          "file",
+          file,
+        );
+
+        const uploadResponse =
+          await fetch(
+            "/api/media/upload",
+            {
+              method: "POST",
+              body: originalFormData,
+            },
+          );
+
+        const uploadData =
+          await uploadResponse.json();
+
+        if (
+          !uploadResponse.ok ||
+          !uploadData.url
+        ) {
           throw new Error(
             uploadData?.error ||
               "Could not save the original handoff.",
           );
         }
 
-        originalAudioUrl = uploadData.url as string;
-        setSavedOriginalAudioUrl(originalAudioUrl);
+        originalAudioUrl =
+          uploadData.url as string;
+
+        setSavedOriginalAudioUrl(
+          originalAudioUrl,
+        );
       }
 
       if (completedDub) {
         setProcessStage("dubbing");
+
         setMessage(
           "Voice handoff already created. Finishing your HANDOFF...",
         );
@@ -348,57 +443,87 @@ export default function Home() {
       }
 
       setProcessStage("dubbing");
+
       setMessage(
         "Creating the Spanish handoff with ElevenLabs...",
       );
 
-      const formData = new FormData();
+      const formData =
+        new FormData();
 
-      formData.append("file", file);
-      formData.append("targetLanguage", "es");
-
-      const startResponse = await fetch(
-        "/api/dubbing/start",
-        {
-          method: "POST",
-          body: formData,
-        },
+      formData.append(
+        "file",
+        file,
       );
 
-      const startData = await startResponse.json();
+      formData.append(
+        "targetLanguage",
+        "es",
+      );
+
+      const startResponse =
+        await fetch(
+          "/api/dubbing/start",
+          {
+            method: "POST",
+            body: formData,
+          },
+        );
+
+      const startData =
+        await startResponse.json();
 
       if (!startResponse.ok) {
         throw new Error(
-          startData?.details?.detail?.message ||
+          startData?.details?.detail
+            ?.message ||
             startData?.error ||
             "Could not start dubbing.",
         );
       }
 
-      const projectId = startData.project_id;
-      const languageId = startData.language_ids?.[0];
+      const projectId =
+        startData.project_id;
 
-      if (!projectId || !languageId) {
+      const languageId =
+        startData.language_ids?.[0];
+
+      if (
+        !projectId ||
+        !languageId
+      ) {
         throw new Error(
           "ElevenLabs did not return the expected project IDs.",
         );
       }
 
-      for (let attempt = 1; attempt <= 60; attempt += 1) {
-        await new Promise((resolve) =>
-          setTimeout(resolve, 2500),
+      for (
+        let attempt = 1;
+        attempt <= 60;
+        attempt += 1
+      ) {
+        await new Promise(
+          (resolve) =>
+            setTimeout(
+              resolve,
+              2500,
+            ),
         );
 
-        const statusResponse = await fetch(
-          `/api/dubbing/status?projectId=${encodeURIComponent(
-            projectId,
-          )}&languageId=${encodeURIComponent(languageId)}`,
-          {
-            cache: "no-store",
-          },
-        );
+        const statusResponse =
+          await fetch(
+            `/api/dubbing/status?projectId=${encodeURIComponent(
+              projectId,
+            )}&languageId=${encodeURIComponent(
+              languageId,
+            )}`,
+            {
+              cache: "no-store",
+            },
+          );
 
-        const statusData = await statusResponse.json();
+        const statusData =
+          await statusResponse.json();
 
         if (!statusResponse.ok) {
           throw new Error(
@@ -408,7 +533,8 @@ export default function Home() {
         }
 
         if (
-          statusData.status === "completed" &&
+          statusData.status ===
+            "completed" &&
           statusData.audioUrl
         ) {
           setCompletedDub({
@@ -426,7 +552,10 @@ export default function Home() {
           return;
         }
 
-        if (statusData.status === "failed") {
+        if (
+          statusData.status ===
+          "failed"
+        ) {
           throw new Error(
             "ElevenLabs reported that the dubbing job failed.",
           );
@@ -434,7 +563,8 @@ export default function Home() {
 
         setMessage(
           `Creating Spanish handoff... ${
-            statusData.status ?? "processing"
+            statusData.status ??
+            "processing"
           }`,
         );
       }
@@ -459,21 +589,30 @@ export default function Home() {
     clearRecordingTimers();
 
     if (recordingUrl) {
-      URL.revokeObjectURL(recordingUrl);
+      URL.revokeObjectURL(
+        recordingUrl,
+      );
     }
 
     mediaStreamRef.current
       ?.getTracks()
-      .forEach((track) => track.stop());
+      .forEach((track) =>
+        track.stop(),
+      );
 
     mediaStreamRef.current = null;
 
     setRecordingBlob(null);
     setRecordingUrl(null);
+
     setDubbedAudioUrl(null);
     setRecipientUrl(null);
     setTagUrl(null);
-    setSavedOriginalAudioUrl(null);
+
+    setSavedOriginalAudioUrl(
+      null,
+    );
+
     setCompletedDub(null);
 
     setRecordingSeconds(0);
@@ -482,15 +621,16 @@ export default function Home() {
     setStatus("idle");
   }
 
-  const formattedTime = `0:${recordingSeconds
-    .toString()
-    .padStart(2, "0")}`;
+  const formattedTime =
+    `0:${recordingSeconds
+      .toString()
+      .padStart(2, "0")}`;
 
   return (
     <main className="min-h-screen bg-slate-950 px-5 py-7 text-white sm:px-6 sm:py-9">
       <div className="mx-auto max-w-2xl">
         <header className="mb-7">
-          <p className="mb-3 text-sm font-semibold uppercase tracking-[0.25em] text-emerald-400">
+          <p className="mb-2 text-xs font-bold uppercase tracking-[0.28em] text-emerald-400">
             HANDOFF
           </p>
 
@@ -500,8 +640,7 @@ export default function Home() {
 
           <p className="mt-3 max-w-xl text-base leading-7 text-slate-400">
             Record useful details about a refurbished appliance
-            and turn them into a spoken handoff for its next
-            home.
+            and turn them into a spoken handoff for its next home.
           </p>
         </header>
 
@@ -516,9 +655,13 @@ export default function Home() {
           <input
             id="appliance"
             value={appliance}
-            disabled={status === "dubbing"}
+            disabled={
+              status === "dubbing"
+            }
             onChange={(event) =>
-              setAppliance(event.target.value)
+              setAppliance(
+                event.target.value,
+              )
             }
             className="mb-6 w-full rounded-xl border border-slate-700 bg-slate-950 px-4 py-3 text-white outline-none transition focus:border-emerald-400 disabled:opacity-60"
           />
@@ -551,36 +694,49 @@ export default function Home() {
             </p>
 
             <p className="mt-2 text-sm leading-6 text-slate-500">
-              In 30 seconds or less, share what was repaired,
-              what was tested, how to get started, and anything
-              packed with the appliance.
+              In 30 seconds or less,
+              share what was repaired,
+              what was tested,
+              how to get started,
+              and anything packed with
+              the appliance.
             </p>
 
             <p className="mt-3 text-xs leading-5 text-slate-500">
               <span className="font-medium text-slate-400">
                 Example:
               </span>{" "}
-              “We replaced the drain pump. Hold Start for two seconds.
+              “We replaced the drain pump.
+              Hold Start for two seconds.
               The inlet hose is inside the drum.”
             </p>
 
-            <div className="mt-6 flex flex-wrap items-center gap-3">
-              {status !== "recording" && (
+            <div className="mt-5 flex flex-wrap items-center gap-3">
+              {status !==
+                "recording" && (
                 <button
                   type="button"
-                  onClick={startRecording}
-                  disabled={status === "dubbing"}
+                  onClick={
+                    startRecording
+                  }
+                  disabled={
+                    status ===
+                    "dubbing"
+                  }
                   className="rounded-xl bg-emerald-400 px-5 py-3 font-semibold text-slate-950 transition hover:bg-emerald-300 disabled:cursor-not-allowed disabled:opacity-50"
                 >
                   🎙 Record handoff
                 </button>
               )}
 
-              {status === "recording" && (
+              {status ===
+                "recording" && (
                 <>
                   <button
                     type="button"
-                    onClick={stopRecording}
+                    onClick={
+                      stopRecording
+                    }
                     className="rounded-xl bg-red-500 px-5 py-3 font-semibold text-white transition hover:bg-red-400"
                   >
                     ■ Stop recording
@@ -588,17 +744,22 @@ export default function Home() {
 
                   <div className="flex items-center gap-2 rounded-xl border border-red-500/30 bg-red-500/10 px-4 py-3 font-mono text-sm text-red-300">
                     <span className="h-2.5 w-2.5 animate-pulse rounded-full bg-red-500" />
-                    {formattedTime} / 0:30
+                    {formattedTime} /
+                    0:30
                   </div>
                 </>
               )}
 
               {recordingBlob &&
-                status !== "recording" &&
-                status !== "dubbing" && (
+                status !==
+                  "recording" &&
+                status !==
+                  "dubbing" && (
                   <button
                     type="button"
-                    onClick={resetRecording}
+                    onClick={
+                      resetRecording
+                    }
                     className="rounded-xl border border-slate-700 px-5 py-3 font-semibold text-slate-200 transition hover:bg-slate-800"
                   >
                     Record again
@@ -607,7 +768,7 @@ export default function Home() {
             </div>
 
             {recordingUrl && (
-              <div className="mt-6">
+              <div className="mt-5">
                 <p className="mb-2 text-xs font-semibold uppercase tracking-wider text-slate-500">
                   Review original
                 </p>
@@ -616,38 +777,52 @@ export default function Home() {
                   className="w-full"
                   controls
                   preload="metadata"
-                  src={recordingUrl}
+                  src={
+                    recordingUrl
+                  }
                 />
               </div>
             )}
           </div>
 
-          {recordingBlob && status !== "recording" && (
-            <button
-              type="button"
-              onClick={createHandoff}
-              disabled={status === "dubbing"}
-              className="mt-6 w-full rounded-xl bg-white px-5 py-4 font-semibold text-slate-950 transition hover:bg-slate-200 disabled:cursor-wait disabled:opacity-60"
-            >
-              {status === "dubbing"
-                ? "Creating HANDOFF..."
-                : status === "error"
-                  ? "Try again"
-                  : "Create HANDOFF"}
-            </button>
-          )}
+          {recordingBlob &&
+            status !==
+              "recording" && (
+              <button
+                type="button"
+                onClick={
+                  createHandoff
+                }
+                disabled={
+                  status ===
+                  "dubbing"
+                }
+                className="mt-5 w-full rounded-xl bg-white px-5 py-4 font-semibold text-slate-950 transition hover:bg-slate-200 disabled:cursor-wait disabled:opacity-60"
+              >
+                {status ===
+                "dubbing"
+                  ? "Creating HANDOFF..."
+                  : status ===
+                      "error"
+                    ? "Try again"
+                    : "Create HANDOFF"}
+              </button>
+            )}
 
-          {status === "dubbing" && (
-            <div className="mt-6 rounded-2xl border border-slate-800 bg-slate-950 p-5">
+          {status ===
+            "dubbing" && (
+            <div className="mt-5 rounded-2xl border border-slate-800 bg-slate-950 p-5">
               <p className="text-sm font-semibold text-white">
-                Preparing this HANDOFF
+                Preparing this
+                HANDOFF
               </p>
 
-              <div className="mt-5 space-y-4">
+              <div className="mt-4 space-y-3">
                 <ProcessStep
-                  label="Save original English recording"
+                  label="Save original recording"
                   state={
-                    processStage === "saving"
+                    processStage ===
+                    "saving"
                       ? "active"
                       : "complete"
                   }
@@ -656,9 +831,11 @@ export default function Home() {
                 <ProcessStep
                   label="Create Spanish voice handoff"
                   state={
-                    processStage === "dubbing"
+                    processStage ===
+                    "dubbing"
                       ? "active"
-                      : processStage === "saving"
+                      : processStage ===
+                          "saving"
                         ? "waiting"
                         : "complete"
                   }
@@ -667,7 +844,8 @@ export default function Home() {
                 <ProcessStep
                   label="Prepare recipient QR tag"
                   state={
-                    processStage === "ready"
+                    processStage ===
+                    "ready"
                       ? "complete"
                       : "waiting"
                   }
@@ -679,10 +857,11 @@ export default function Home() {
           {message && (
             <p
               aria-live="polite"
-              className={`mt-5 text-sm ${
+              className={`mt-4 text-sm ${
                 status === "error"
                   ? "text-red-300"
-                  : status === "completed"
+                  : status ===
+                      "completed"
                     ? "text-emerald-300"
                     : "text-slate-400"
               }`}
@@ -691,25 +870,27 @@ export default function Home() {
             </p>
           )}
 
-          {status === "completed" &&
+          {status ===
+              "completed" &&
             dubbedAudioUrl &&
             recipientUrl &&
             tagUrl && (
-              <div className="mt-8 rounded-2xl border border-emerald-500/30 bg-emerald-500/10 p-6">
+              <div className="mt-6 rounded-2xl border border-emerald-500/30 bg-emerald-500/10 p-5">
                 <p className="text-sm font-semibold text-emerald-300">
                   ✓ HANDOFF ready
                 </p>
 
-                <h2 className="mt-2 text-2xl font-semibold">
+                <h2 className="mt-2 text-xl font-semibold">
                   {appliance.trim() ||
                     "Refurbished appliance"}
                 </h2>
 
-                <p className="mt-2 text-sm text-slate-400">
-                  English original + Español (Spanish)
+                <p className="mt-1 text-sm text-slate-400">
+                  English original ·
+                  Español (Spanish)
                 </p>
 
-                <div className="mt-6">
+                <div className="mt-5">
                   <p className="mb-2 text-xs font-semibold uppercase tracking-wider text-slate-500">
                     Review Spanish
                   </p>
@@ -718,40 +899,44 @@ export default function Home() {
                     className="w-full"
                     controls
                     preload="metadata"
-                    src={dubbedAudioUrl}
+                    src={
+                      dubbedAudioUrl
+                    }
                   />
                 </div>
 
-                <div className="mt-7 border-t border-emerald-500/20 pt-6">
+                <div className="mt-6 border-t border-emerald-500/20 pt-5">
                   <p className="text-sm font-semibold">
                     Ready to travel
                   </p>
 
-                  <p className="mt-2 text-sm leading-6 text-slate-400">
-                    Attach this QR tag to the appliance so its
-                    next household can hear the handoff.
+                  <p className="mt-1 text-sm leading-6 text-slate-400">
+                    Attach this QR tag
+                    to the appliance.
                   </p>
 
-                  <div className="mt-5 inline-block rounded-2xl bg-white p-3">
+                  <div className="mt-4 inline-block rounded-2xl bg-white p-3">
                     <Image
                       src={`/api/qr?data=${encodeURIComponent(
                         recipientUrl,
                       )}`}
-                      width={240}
-                      height={240}
+                      width={220}
+                      height={220}
                       alt="QR code for this HANDOFF"
                       unoptimized
                     />
                   </div>
 
-                  <div className="mt-6 flex flex-wrap gap-3">
+                  <div className="mt-5 flex flex-wrap gap-3">
                     <a
-                      href={recipientUrl}
+                      href={
+                        recipientUrl
+                      }
                       target="_blank"
                       rel="noreferrer"
                       className="inline-flex rounded-xl border border-emerald-500/30 px-4 py-3 text-sm font-semibold text-emerald-300 transition hover:bg-emerald-500/10"
                     >
-                      Open recipient view ↗
+                      Recipient view ↗
                     </a>
 
                     <a
@@ -760,7 +945,7 @@ export default function Home() {
                       rel="noreferrer"
                       className="inline-flex rounded-xl bg-emerald-400 px-4 py-3 text-sm font-semibold text-slate-950 transition hover:bg-emerald-300"
                     >
-                      Open printable tag ↗
+                      Printable tag ↗
                     </a>
                   </div>
                 </div>
@@ -777,7 +962,10 @@ function ProcessStep({
   state,
 }: {
   label: string;
-  state: "waiting" | "active" | "complete";
+  state:
+    | "waiting"
+    | "active"
+    | "complete";
 }) {
   return (
     <div className="flex items-center gap-3">
@@ -790,9 +978,11 @@ function ProcessStep({
               : "border border-slate-700 text-slate-600"
         }`}
       >
-        {state === "complete"
+        {state ===
+        "complete"
           ? "✓"
-          : state === "active"
+          : state ===
+              "active"
             ? "•"
             : ""}
       </div>
@@ -801,7 +991,8 @@ function ProcessStep({
         className={`text-sm ${
           state === "complete"
             ? "text-slate-300"
-            : state === "active"
+            : state ===
+                "active"
               ? "font-medium text-white"
               : "text-slate-600"
         }`}
