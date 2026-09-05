@@ -411,25 +411,25 @@ export default function Home() {
     .padStart(2, "0")}`;
 
   return (
-    <main className="min-h-screen bg-slate-950 px-6 py-12 text-white">
+    <main className="min-h-screen bg-slate-950 px-5 py-7 text-white sm:px-6 sm:py-9">
       <div className="mx-auto max-w-2xl">
-        <header className="mb-10">
+        <header className="mb-7">
           <p className="mb-3 text-sm font-semibold uppercase tracking-[0.25em] text-emerald-400">
             HANDOFF
           </p>
 
-          <h1 className="text-4xl font-semibold tracking-tight sm:text-5xl">
+          <h1 className="text-3xl font-semibold tracking-tight sm:text-4xl">
             Pass on more than the appliance.
           </h1>
 
-          <p className="mt-4 max-w-xl text-lg leading-8 text-slate-400">
+          <p className="mt-3 max-w-xl text-base leading-7 text-slate-400">
             Record useful details about a refurbished appliance
             and turn them into a spoken handoff for its next
             home.
           </p>
         </header>
 
-        <section className="rounded-3xl border border-slate-800 bg-slate-900 p-6 shadow-2xl sm:p-8">
+        <section className="rounded-3xl border border-slate-800 bg-slate-900 p-5 shadow-2xl sm:p-6">
           <label
             htmlFor="appliance"
             className="mb-2 block text-sm font-medium text-slate-300"
@@ -444,10 +444,10 @@ export default function Home() {
             onChange={(event) =>
               setAppliance(event.target.value)
             }
-            className="mb-8 w-full rounded-xl border border-slate-700 bg-slate-950 px-4 py-3 text-white outline-none transition focus:border-emerald-400 disabled:opacity-60"
+            className="mb-6 w-full rounded-xl border border-slate-700 bg-slate-950 px-4 py-3 text-white outline-none transition focus:border-emerald-400 disabled:opacity-60"
           />
 
-          <div className="mb-8">
+          <div className="mb-6">
             <p className="mb-2 text-sm font-medium text-slate-300">
               Recipient language
             </p>
@@ -457,7 +457,7 @@ export default function Home() {
             </div>
           </div>
 
-          <div className="rounded-2xl border border-slate-800 bg-slate-950 p-5">
+          <div className="rounded-2xl border border-slate-800 bg-slate-950 p-4 sm:p-5">
             <p className="text-sm font-medium text-slate-300">
               Technician handoff
             </p>
@@ -468,13 +468,13 @@ export default function Home() {
               packed with the appliance.
             </p>
 
-            <div className="mt-5 rounded-xl border border-slate-800 bg-slate-900/60 p-4 text-sm leading-6 text-slate-400">
-              <span className="font-medium text-slate-300">
+            <p className="mt-3 text-xs leading-5 text-slate-500">
+              <span className="font-medium text-slate-400">
                 Example:
               </span>{" "}
-              “We replaced the drain pump. Hold Start for two
-              seconds. The inlet hose is packed inside the drum.”
-            </div>
+              “We replaced the drain pump. Hold Start for two seconds.
+              The inlet hose is inside the drum.”
+            </p>
 
             <div className="mt-6 flex flex-wrap items-center gap-3">
               {status !== "recording" && (
