@@ -13,6 +13,7 @@ type SearchParams = Promise<{
   appliance?: string;
   originalAudioUrl?: string;
   translatedAudioUrl?: string;
+  transcriptUrl?: string;
   sourceLanguage?: string;
   targetLanguage?: string;
 }>;
@@ -32,7 +33,7 @@ function languageLabel(
   language: LanguageCode,
 ) {
   return language === "es"
-    ? "Español (Spanish)"
+    ? "Español"
     : "English";
 }
 
@@ -54,6 +55,9 @@ export default async function HandoffTagPage({
   const translatedAudioUrl =
     params.translatedAudioUrl;
 
+  const transcriptUrl =
+    params.transcriptUrl;
+
   const sourceLanguage =
     languageCode(
       params.sourceLanguage,
@@ -74,8 +78,7 @@ export default async function HandoffTagPage({
       <main className="min-h-screen bg-slate-100 p-8 text-slate-950">
         <div className="mx-auto max-w-md">
           <h1 className="text-2xl font-semibold">
-            Invalid HANDOFF
-            tag
+            Invalid HANDOFF tag
           </h1>
         </div>
       </main>
@@ -124,6 +127,13 @@ export default async function HandoffTagPage({
     translatedAudioUrl,
   );
 
+  if (transcriptUrl) {
+    recipientUrl.searchParams.set(
+      "transcriptUrl",
+      transcriptUrl,
+    );
+  }
+
   recipientUrl.searchParams.set(
     "sourceLanguage",
     sourceLanguage,
@@ -154,28 +164,26 @@ export default async function HandoffTagPage({
           <div className="mx-auto my-6 h-px bg-slate-200" />
 
           <p className="text-xs font-semibold uppercase tracking-wider text-slate-500">
-            Prepared for its
-            next home
+            Prepared for its next home
           </p>
 
           <h1 className="mt-2 text-3xl font-bold tracking-tight">
             {appliance}
           </h1>
 
-          <div className="mx-auto mt-8 inline-block rounded-2xl border border-slate-200 bg-white p-3">
+          <div className="mx-auto mt-7 inline-block rounded-2xl border border-slate-200 bg-white p-3">
             <Image
               src={qrSource}
               width={280}
               height={280}
-              alt={`QR code for ${appliance} voice handoff`}
+              alt={`QR code for ${appliance} HANDOFF`}
               unoptimized
               priority
             />
           </div>
 
-          <h2 className="mt-6 text-xl font-bold">
-            Scan to hear your
-            handoff
+          <h2 className="mt-5 text-xl font-bold">
+            Scan to listen or read
           </h2>
 
           <p className="mt-2 text-sm text-slate-600">
@@ -188,7 +196,11 @@ export default async function HandoffTagPage({
             )}
           </p>
 
-          <div className="mx-auto my-7 h-px bg-slate-200" />
+          <p className="mt-2 text-xs font-medium uppercase tracking-wider text-slate-500">
+            Voice + readable text
+          </p>
+
+          <div className="mx-auto my-6 h-px bg-slate-200" />
 
           <p className="text-xs font-medium text-slate-500">
             Don&apos;t just give
@@ -196,8 +208,7 @@ export default async function HandoffTagPage({
           </p>
 
           <p className="mt-1 text-sm font-bold">
-            Pass on the
-            know-how.
+            Pass on the know-how.
           </p>
         </section>
       </div>

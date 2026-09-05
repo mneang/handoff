@@ -16,6 +16,7 @@ type ProcessStage =
   | "cleaning"
   | "saving"
   | "dubbing"
+  | "accessibility"
   | "ready";
 
 const MAX_RECORDING_SECONDS = 30;
@@ -243,47 +244,113 @@ export default function Home() {
     originalAudioUrl: string,
     applianceName: string,
   ) {
+    const targetName =
+      targetLanguage === "es"
+        ? "Spanish"
+        : "English";
+
+    setProcessStage("accessibility");
+
     setMessage(
-      `${targetLanguage === "es" ? "Spanish" : "English"} handoff created. Saving it for the recipient...`,
+      `Preparing readable ${targetName} handoff...`,
     );
 
-    const spanishSaveResponse =
-      await fetch(
-        "/api/media/translated",
-        {
-          method: "POST",
-          headers: {
-            "Content-Type":
-              "application/json",
-          },
-          body: JSON.stringify({
-            projectId,
-            languageId,
-          }),
-        },
-      );
+    const transcriptResponse = await fetch(
+      `/api/dubbing/transcript?projectId=${encodeURIComponent(
+        projectId,
+      )}&languageId=${encodeURIComponent(languageId)}`,
+      {
+        cache: "no-store",
+      },
+    );
 
-    const spanishSaveData =
-      await spanishSaveResponse.json();
+    const transcriptData =
+      await transcriptResponse.json();
 
     if (
-      !spanishSaveResponse.ok ||
-      !spanishSaveData.url
+      !transcriptResponse.ok ||
+      !transcriptData.sourceText ||
+      !transcriptData.translatedText
     ) {
       throw new Error(
-        spanishSaveData?.error ||
-          "Could not save the Spanish handoff.",
+        transcriptData?.error ||
+          "Could not prepare the readable handoff.",
       );
     }
 
-    const spanishAudioUrl =
-      spanishSaveData.url as string;
+    const transcriptSaveResponse = await fetch(
+      "/api/media/transcript",
+      {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          sourceText:
+            transcriptData.sourceText,
+          translatedText:
+            transcriptData.translatedText,
+          sourceLanguage,
+          targetLanguage,
+        }),
+      },
+    );
 
-    const handoffUrl =
-      new URL(
-        "/h",
-        window.location.origin,
+    const transcriptSaveData =
+      await transcriptSaveResponse.json();
+
+    if (
+      !transcriptSaveResponse.ok ||
+      !transcriptSaveData.url
+    ) {
+      throw new Error(
+        transcriptSaveData?.error ||
+          "Could not save the readable handoff.",
       );
+    }
+
+    const transcriptUrl =
+      transcriptSaveData.url as string;
+
+    setMessage(
+      `${targetName} handoff ready. Preparing recipient audio...`,
+    );
+
+    const translatedSaveResponse = await fetch(
+      "/api/media/translated",
+      {
+        method: "POST",
+        headers: {
+          "Content-Type":
+            "application/json",
+        },
+        body: JSON.stringify({
+          projectId,
+          languageId,
+        }),
+      },
+    );
+
+    const translatedSaveData =
+      await translatedSaveResponse.json();
+
+    if (
+      !translatedSaveResponse.ok ||
+      !translatedSaveData.url
+    ) {
+      throw new Error(
+        translatedSaveData?.error ||
+          "Could not save the recipient voice handoff.",
+      );
+    }
+
+    const translatedAudioUrl =
+      translatedSaveData.url as string;
+
+    const handoffUrl = new URL(
+      "/h",
+      window.location.origin,
+    );
 
     handoffUrl.searchParams.set(
       "appliance",
@@ -297,7 +364,12 @@ export default function Home() {
 
     handoffUrl.searchParams.set(
       "translatedAudioUrl",
-      spanishAudioUrl,
+      translatedAudioUrl,
+    );
+
+    handoffUrl.searchParams.set(
+      "transcriptUrl",
+      transcriptUrl,
     );
 
     handoffUrl.searchParams.set(
@@ -310,11 +382,10 @@ export default function Home() {
       targetLanguage,
     );
 
-    const printableTagUrl =
-      new URL(
-        "/tag",
-        window.location.origin,
-      );
+    const printableTagUrl = new URL(
+      "/tag",
+      window.location.origin,
+    );
 
     printableTagUrl.searchParams.set(
       "appliance",
@@ -328,7 +399,12 @@ export default function Home() {
 
     printableTagUrl.searchParams.set(
       "translatedAudioUrl",
-      spanishAudioUrl,
+      translatedAudioUrl,
+    );
+
+    printableTagUrl.searchParams.set(
+      "transcriptUrl",
+      transcriptUrl,
     );
 
     printableTagUrl.searchParams.set(
@@ -342,7 +418,7 @@ export default function Home() {
     );
 
     setDubbedAudioUrl(
-      spanishAudioUrl,
+      translatedAudioUrl,
     );
 
     setRecipientUrl(
@@ -357,7 +433,7 @@ export default function Home() {
     setStatus("completed");
 
     setMessage(
-      "Your HANDOFF is ready to travel with the appliance.",
+      "Your HANDOFF is ready to listen to or read.",
     );
   }
 
@@ -1006,19 +1082,28 @@ export default function Home() {
                   state={
                     processStage === "dubbing"
                       ? "active"
-                      : processStage === "cleaning" ||
-                          processStage === "saving" ||
-                          processStage === "idle"
-                        ? "waiting"
-                        : "complete"
+                      : processStage === "accessibility" ||
+                          processStage === "ready"
+                        ? "complete"
+                        : "waiting"
+                  }
+                />
+
+                <ProcessStep
+                  label="Prepare readable handoff"
+                  state={
+                    processStage === "accessibility"
+                      ? "active"
+                      : processStage === "ready"
+                        ? "complete"
+                        : "waiting"
                   }
                 />
 
                 <ProcessStep
                   label="Prepare recipient QR tag"
                   state={
-                    processStage ===
-                    "ready"
+                    processStage === "ready"
                       ? "complete"
                       : "waiting"
                   }

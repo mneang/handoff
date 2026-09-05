@@ -6,6 +6,7 @@ type SearchParams = Promise<{
   appliance?: string;
   originalAudioUrl?: string;
   translatedAudioUrl?: string;
+  transcriptUrl?: string;
   sourceLanguage?: string;
   targetLanguage?: string;
 }>;
@@ -19,6 +20,27 @@ function languageCode(
     : value === "en"
       ? "en"
       : fallback;
+}
+
+function isAllowedTranscriptUrl(
+  value: string | undefined,
+) {
+  if (!value) {
+    return false;
+  }
+
+  try {
+    const url = new URL(value);
+
+    return (
+      url.protocol === "https:" &&
+      url.hostname.endsWith(
+        ".vercel-storage.com",
+      )
+    );
+  } catch {
+    return false;
+  }
 }
 
 export default async function RecipientHandoffPage({
@@ -51,6 +73,53 @@ export default async function RecipientHandoffPage({
       "es",
     );
 
+  let sourceText = "";
+  let translatedText = "";
+
+  if (
+    isAllowedTranscriptUrl(
+      params.transcriptUrl,
+    )
+  ) {
+    try {
+      const transcriptResponse =
+        await fetch(
+          params.transcriptUrl!,
+          {
+            cache: "no-store",
+          },
+        );
+
+      if (
+        transcriptResponse.ok
+      ) {
+        const transcript =
+          await transcriptResponse.json();
+
+        if (
+          typeof transcript?.sourceText ===
+          "string"
+        ) {
+          sourceText =
+            transcript.sourceText;
+        }
+
+        if (
+          typeof transcript?.translatedText ===
+          "string"
+        ) {
+          translatedText =
+            transcript.translatedText;
+        }
+      }
+    } catch (error) {
+      console.error(
+        "HANDOFF readable text load error:",
+        error,
+      );
+    }
+  }
+
   if (
     !originalAudioUrl ||
     !translatedAudioUrl
@@ -77,7 +146,7 @@ export default async function RecipientHandoffPage({
   }
 
   return (
-    <main className="min-h-screen bg-slate-950 px-5 py-6 text-white sm:py-10">
+    <main className="min-h-screen bg-slate-950 px-5 py-6 text-white sm:py-9">
       <div className="mx-auto max-w-md">
         <header>
           <p className="text-xs font-bold uppercase tracking-[0.25em] text-emerald-400">
@@ -89,10 +158,9 @@ export default async function RecipientHandoffPage({
           </h1>
 
           <p className="mt-2 text-sm leading-6 text-slate-400">
-            A voice note from
-            the person who
-            prepared this
-            appliance.
+            Listen or read the
+            handoff from the person
+            who prepared this appliance.
           </p>
         </header>
 
@@ -100,13 +168,11 @@ export default async function RecipientHandoffPage({
           <div className="mb-4 flex items-center justify-between gap-3">
             <div>
               <p className="text-xs font-semibold uppercase tracking-wider text-slate-500">
-                Voice handoff
+                Your HANDOFF
               </p>
 
               <p className="mt-1 text-sm font-medium text-slate-200">
-                Choose how
-                you&apos;d like
-                to listen
+                Choose your language
               </p>
             </div>
 
@@ -128,18 +194,18 @@ export default async function RecipientHandoffPage({
             targetLanguage={
               targetLanguage
             }
+            sourceText={
+              sourceText
+            }
+            translatedText={
+              translatedText
+            }
           />
-
-          <p className="mt-5 border-t border-slate-800 pt-4 text-xs leading-5 text-slate-500">
-            Practical information
-            for this specific
-            appliance.
-          </p>
         </section>
 
-        <p className="mt-5 text-center text-xs text-slate-600">
-          Pass on more than the
-          appliance.
+        <p className="mt-5 text-center text-xs leading-5 text-slate-600">
+          Listen or read.
+          Pass on the know-how.
         </p>
       </div>
     </main>
