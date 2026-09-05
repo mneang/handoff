@@ -1,25 +1,60 @@
-import HandoffPlayer from "@/components/HandoffPlayer";
+import HandoffPlayer, {
+  type LanguageCode,
+} from "@/components/HandoffPlayer";
 
 type SearchParams = Promise<{
   appliance?: string;
   originalAudioUrl?: string;
-  spanishAudioUrl?: string;
+  translatedAudioUrl?: string;
+  sourceLanguage?: string;
+  targetLanguage?: string;
 }>;
+
+function languageCode(
+  value: string | undefined,
+  fallback: LanguageCode,
+): LanguageCode {
+  return value === "es"
+    ? "es"
+    : value === "en"
+      ? "en"
+      : fallback;
+}
 
 export default async function RecipientHandoffPage({
   searchParams,
 }: {
   searchParams: SearchParams;
 }) {
-  const params = await searchParams;
+  const params =
+    await searchParams;
 
   const appliance =
-    params.appliance || "Refurbished appliance";
+    params.appliance ||
+    "Refurbished appliance";
 
-  const originalAudioUrl = params.originalAudioUrl;
-  const spanishAudioUrl = params.spanishAudioUrl;
+  const originalAudioUrl =
+    params.originalAudioUrl;
 
-  if (!originalAudioUrl || !spanishAudioUrl) {
+  const translatedAudioUrl =
+    params.translatedAudioUrl;
+
+  const sourceLanguage =
+    languageCode(
+      params.sourceLanguage,
+      "en",
+    );
+
+  const targetLanguage =
+    languageCode(
+      params.targetLanguage,
+      "es",
+    );
+
+  if (
+    !originalAudioUrl ||
+    !translatedAudioUrl
+  ) {
     return (
       <main className="min-h-screen bg-slate-950 px-5 py-8 text-white">
         <div className="mx-auto max-w-md">
@@ -28,11 +63,13 @@ export default async function RecipientHandoffPage({
           </p>
 
           <h1 className="mt-4 text-3xl font-semibold">
-            This handoff link is incomplete.
+            This handoff link
+            is incomplete.
           </h1>
 
           <p className="mt-3 text-slate-400">
-            Please scan the HANDOFF tag again.
+            Please scan the
+            HANDOFF tag again.
           </p>
         </div>
       </main>
@@ -52,7 +89,10 @@ export default async function RecipientHandoffPage({
           </h1>
 
           <p className="mt-2 text-sm leading-6 text-slate-400">
-            A voice note from the person who prepared this appliance.
+            A voice note from
+            the person who
+            prepared this
+            appliance.
           </p>
         </header>
 
@@ -64,7 +104,9 @@ export default async function RecipientHandoffPage({
               </p>
 
               <p className="mt-1 text-sm font-medium text-slate-200">
-                Choose how you&apos;d like to listen
+                Choose how
+                you&apos;d like
+                to listen
               </p>
             </div>
 
@@ -74,17 +116,30 @@ export default async function RecipientHandoffPage({
           </div>
 
           <HandoffPlayer
-            originalAudioUrl={originalAudioUrl}
-            spanishAudioUrl={spanishAudioUrl}
+            originalAudioUrl={
+              originalAudioUrl
+            }
+            translatedAudioUrl={
+              translatedAudioUrl
+            }
+            sourceLanguage={
+              sourceLanguage
+            }
+            targetLanguage={
+              targetLanguage
+            }
           />
 
           <p className="mt-5 border-t border-slate-800 pt-4 text-xs leading-5 text-slate-500">
-            Practical information for this specific appliance.
+            Practical information
+            for this specific
+            appliance.
           </p>
         </section>
 
         <p className="mt-5 text-center text-xs text-slate-600">
-          Pass on more than the appliance.
+          Pass on more than the
+          appliance.
         </p>
       </div>
     </main>

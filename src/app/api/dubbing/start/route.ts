@@ -2,13 +2,15 @@ import { NextResponse } from "next/server";
 
 export const runtime = "nodejs";
 
+const SUPPORTED_LANGUAGES = new Set(["en", "es"]);
+
 export async function POST(request: Request) {
   const apiKey = process.env.ELEVENLABS_API_KEY;
 
   if (!apiKey) {
     return NextResponse.json(
       { error: "ELEVENLABS_API_KEY is not configured." },
-      { status: 500 }
+      { status: 500 },
     );
   }
 
@@ -16,26 +18,64 @@ export async function POST(request: Request) {
     const incomingFormData = await request.formData();
 
     const file = incomingFormData.get("file");
+
+    const sourceLanguage =
+      incomingFormData.get("sourceLanguage")?.toString() || "en";
+
     const targetLanguage =
       incomingFormData.get("targetLanguage")?.toString() || "es";
 
     if (!(file instanceof File)) {
       return NextResponse.json(
         { error: "An audio file is required." },
-        { status: 400 }
+        { status: 400 },
+      );
+    }
+
+    if (
+      !SUPPORTED_LANGUAGES.has(sourceLanguage) ||
+      !SUPPORTED_LANGUAGES.has(targetLanguage)
+    ) {
+      return NextResponse.json(
+        { error: "HANDOFF currently supports English and Spanish." },
+        { status: 400 },
+      );
+    }
+
+    if (sourceLanguage === targetLanguage) {
+      return NextResponse.json(
+        { error: "Source and recipient languages must be different." },
+        { status: 400 },
       );
     }
 
     const elevenLabsFormData = new FormData();
 
-    elevenLabsFormData.append("file", file, file.name || "handoff-audio.webm");
+    elevenLabsFormData.append(
+      "file",
+      file,
+      file.name || "handoff-audio.webm",
+    );
+
     elevenLabsFormData.append(
       "reference",
-      `HANDOFF ${new Date().toISOString()}`
+      `HANDOFF ${new Date().toISOString()}`,
     );
-    elevenLabsFormData.append("source_language", "en");
-    elevenLabsFormData.append("target_language", targetLanguage);
-    elevenLabsFormData.append("model_id", "dubbing_v2");
+
+    elevenLabsFormData.append(
+      "source_language",
+      sourceLanguage,
+    );
+
+    elevenLabsFormData.append(
+      "target_language",
+      targetLanguage,
+    );
+
+    elevenLabsFormData.append(
+      "model_id",
+      "dubbing_v2",
+    );
 
     const response = await fetch(
       "https://api.elevenlabs.io/v1/dubbing/project",
@@ -45,7 +85,7 @@ export async function POST(request: Request) {
           "xi-api-key": apiKey,
         },
         body: elevenLabsFormData,
-      }
+      },
     );
 
     const rawResponse = await response.text();
@@ -64,17 +104,25 @@ export async function POST(request: Request) {
           error: "ElevenLabs could not create the dubbing project.",
           details: data,
         },
-        { status: response.status }
+        { status: response.status },
       );
     }
 
-    return NextResponse.json(data, { status: 201 });
+    return NextResponse.json(data, {
+      status: 201,
+    });
   } catch (error) {
-    console.error("HANDOFF dubbing start error:", error);
+    console.error(
+      "HANDOFF dubbing start error:",
+      error,
+    );
 
     return NextResponse.json(
-      { error: "Unexpected server error while starting the dub." },
-      { status: 500 }
+      {
+        error:
+          "Unexpected server error while starting the dub.",
+      },
+      { status: 500 },
     );
   }
 }

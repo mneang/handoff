@@ -1,47 +1,111 @@
 "use client";
 
-import { useRef, useState } from "react";
+import {
+  useRef,
+  useState,
+} from "react";
 
-type Language = "spanish" | "english";
+export type LanguageCode =
+  | "en"
+  | "es";
+
+type PlaybackMode =
+  | "translated"
+  | "original";
 
 type HandoffPlayerProps = {
   originalAudioUrl: string;
-  spanishAudioUrl: string;
+  translatedAudioUrl: string;
+  sourceLanguage: LanguageCode;
+  targetLanguage: LanguageCode;
+};
+
+const LANGUAGE_NAMES: Record<
+  LanguageCode,
+  {
+    primary: string;
+    secondary?: string;
+  }
+> = {
+  en: {
+    primary: "English",
+  },
+  es: {
+    primary: "Español",
+    secondary: "Spanish",
+  },
 };
 
 export default function HandoffPlayer({
   originalAudioUrl,
-  spanishAudioUrl,
+  translatedAudioUrl,
+  sourceLanguage,
+  targetLanguage,
 }: HandoffPlayerProps) {
-  const [language, setLanguage] = useState<Language>("spanish");
-  const [audioError, setAudioError] = useState(false);
-  const audioRef = useRef<HTMLAudioElement | null>(null);
+  const [
+    playbackMode,
+    setPlaybackMode,
+  ] =
+    useState<PlaybackMode>(
+      "translated",
+    );
+
+  const [
+    audioError,
+    setAudioError,
+  ] = useState(false);
+
+  const audioRef =
+    useRef<HTMLAudioElement | null>(
+      null,
+    );
 
   const activeAudioUrl =
-    language === "spanish" ? spanishAudioUrl : originalAudioUrl;
+    playbackMode ===
+    "translated"
+      ? translatedAudioUrl
+      : originalAudioUrl;
 
-  function changeLanguage(nextLanguage: Language) {
-    if (nextLanguage === language) {
+  const translatedLabel =
+    LANGUAGE_NAMES[
+      targetLanguage
+    ];
+
+  const originalLabel =
+    LANGUAGE_NAMES[
+      sourceLanguage
+    ];
+
+  function changeMode(
+    nextMode: PlaybackMode,
+  ) {
+    if (
+      nextMode === playbackMode
+    ) {
       return;
     }
 
-    setLanguage(nextLanguage);
+    setPlaybackMode(nextMode);
     setAudioError(false);
   }
 
   function retryAudio() {
-    const audio = audioRef.current;
+    const audio =
+      audioRef.current;
 
     if (!audio) {
       return;
     }
 
     setAudioError(false);
+
     audio.load();
 
-    audio.play().catch(() => {
-      setAudioError(true);
-    });
+    audio
+      .play()
+      .catch(() => {
+        setAudioError(true);
+      });
   }
 
   return (
@@ -49,31 +113,66 @@ export default function HandoffPlayer({
       <div className="grid grid-cols-2 gap-2">
         <button
           type="button"
-          onClick={() => changeLanguage("spanish")}
-          aria-pressed={language === "spanish"}
-          className={`rounded-xl border px-3 py-3 text-sm font-semibold transition ${
-            language === "spanish"
+          onClick={() =>
+            changeMode(
+              "translated",
+            )
+          }
+          aria-pressed={
+            playbackMode ===
+            "translated"
+          }
+          className={`min-h-14 rounded-xl border px-3 py-3 text-sm font-semibold transition ${
+            playbackMode ===
+            "translated"
               ? "border-emerald-400 bg-emerald-400 text-slate-950"
               : "border-slate-700 bg-slate-950 text-slate-300"
           }`}
         >
-          Español
+          <span
+            lang={
+              targetLanguage
+            }
+          >
+            {
+              translatedLabel.primary
+            }
+          </span>
+
           <span className="block text-xs font-normal opacity-70">
-            Spanish
+            {translatedLabel.secondary ??
+              "Recipient"}
           </span>
         </button>
 
         <button
           type="button"
-          onClick={() => changeLanguage("english")}
-          aria-pressed={language === "english"}
-          className={`rounded-xl border px-3 py-3 text-sm font-semibold transition ${
-            language === "english"
+          onClick={() =>
+            changeMode(
+              "original",
+            )
+          }
+          aria-pressed={
+            playbackMode ===
+            "original"
+          }
+          className={`min-h-14 rounded-xl border px-3 py-3 text-sm font-semibold transition ${
+            playbackMode ===
+            "original"
               ? "border-emerald-400 bg-emerald-400 text-slate-950"
               : "border-slate-700 bg-slate-950 text-slate-300"
           }`}
         >
-          English
+          <span
+            lang={
+              sourceLanguage
+            }
+          >
+            {
+              originalLabel.primary
+            }
+          </span>
+
           <span className="block text-xs font-normal opacity-70">
             Original
           </span>
@@ -87,14 +186,21 @@ export default function HandoffPlayer({
         controls
         preload="metadata"
         src={activeAudioUrl}
-        onError={() => setAudioError(true)}
-        onLoadedMetadata={() => setAudioError(false)}
+        onError={() =>
+          setAudioError(true)
+        }
+        onLoadedMetadata={() =>
+          setAudioError(false)
+        }
       />
 
       {audioError && (
         <div className="mt-3 rounded-xl border border-amber-500/20 bg-amber-500/10 p-3">
           <p className="text-sm text-amber-100">
-            Audio couldn&apos;t load. Check your connection and try again.
+            Audio couldn&apos;t
+            load. Check your
+            connection and try
+            again.
           </p>
 
           <button

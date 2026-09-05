@@ -27,6 +27,12 @@ export default function Home() {
   const [appliance, setAppliance] =
     useState("Whirlpool Washer");
 
+  const [sourceLanguage, setSourceLanguage] =
+    useState<"en" | "es">("en");
+
+  const targetLanguage =
+    sourceLanguage === "en" ? "es" : "en";
+
   const [recordingBlob, setRecordingBlob] =
     useState<Blob | null>(null);
 
@@ -285,8 +291,18 @@ export default function Home() {
     );
 
     handoffUrl.searchParams.set(
-      "spanishAudioUrl",
+      "translatedAudioUrl",
       spanishAudioUrl,
+    );
+
+    handoffUrl.searchParams.set(
+      "sourceLanguage",
+      sourceLanguage,
+    );
+
+    handoffUrl.searchParams.set(
+      "targetLanguage",
+      targetLanguage,
     );
 
     const printableTagUrl =
@@ -306,8 +322,18 @@ export default function Home() {
     );
 
     printableTagUrl.searchParams.set(
-      "spanishAudioUrl",
+      "translatedAudioUrl",
       spanishAudioUrl,
+    );
+
+    printableTagUrl.searchParams.set(
+      "sourceLanguage",
+      sourceLanguage,
+    );
+
+    printableTagUrl.searchParams.set(
+      "targetLanguage",
+      targetLanguage,
     );
 
     setDubbedAudioUrl(
@@ -445,7 +471,11 @@ export default function Home() {
       setProcessStage("dubbing");
 
       setMessage(
-        "Creating the Spanish handoff with ElevenLabs...",
+        `Creating the ${
+          targetLanguage === "es"
+            ? "Spanish"
+            : "English"
+        } handoff with ElevenLabs...`,
       );
 
       const formData =
@@ -457,8 +487,13 @@ export default function Home() {
       );
 
       formData.append(
+        "sourceLanguage",
+        sourceLanguage,
+      );
+
+      formData.append(
         "targetLanguage",
-        "es",
+        targetLanguage,
       );
 
       const startResponse =
@@ -671,25 +706,53 @@ export default function Home() {
               Voice handoff language
             </p>
 
-            <div className="flex items-center justify-between gap-3 rounded-xl border border-slate-700 bg-slate-950 px-4 py-3">
-              <span className="font-medium text-white">
-                English
-              </span>
+            <div className="grid grid-cols-[1fr_auto_1fr] items-center gap-2">
+              <div className="rounded-xl border border-slate-700 bg-slate-950 px-3 py-3 text-center">
+                <p className="text-xs text-slate-500">
+                  I&apos;m speaking
+                </p>
 
-              <span
-                aria-hidden="true"
-                className="text-emerald-400"
+                <p className="mt-1 font-medium text-white">
+                  {sourceLanguage === "en"
+                    ? "English"
+                    : "Español"}
+                </p>
+              </div>
+
+              <button
+                type="button"
+                disabled={
+                  Boolean(recordingBlob) ||
+                  status === "recording" ||
+                  status === "dubbing"
+                }
+                onClick={() =>
+                  setSourceLanguage((current) =>
+                    current === "en" ? "es" : "en"
+                  )
+                }
+                aria-label="Swap source and recipient languages"
+                className="flex h-11 w-11 items-center justify-center rounded-full border border-slate-700 bg-slate-950 text-lg text-emerald-400 transition hover:border-emerald-400 disabled:cursor-not-allowed disabled:opacity-40"
               >
-                →
-              </span>
+                ⇄
+              </button>
 
-              <span className="text-right font-medium text-white">
-                Español
-                <span className="ml-1 text-sm font-normal text-slate-500">
-                  (Spanish)
-                </span>
-              </span>
+              <div className="rounded-xl border border-slate-700 bg-slate-950 px-3 py-3 text-center">
+                <p className="text-xs text-slate-500">
+                  Recipient
+                </p>
+
+                <p className="mt-1 font-medium text-white">
+                  {targetLanguage === "en"
+                    ? "English"
+                    : "Español"}
+                </p>
+              </div>
             </div>
+
+            <p className="mt-2 text-xs text-slate-500">
+              Choose the direction before recording.
+            </p>
           </div>
 
           <div className="rounded-2xl border border-slate-800 bg-slate-950 p-4 sm:p-5">

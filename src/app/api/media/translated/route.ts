@@ -24,7 +24,10 @@ export async function POST(request: Request) {
       typeof languageId !== "string"
     ) {
       return NextResponse.json(
-        { error: "projectId and languageId are required." },
+        {
+          error:
+            "projectId and languageId are required.",
+        },
         { status: 400 },
       );
     }
@@ -43,58 +46,93 @@ export async function POST(request: Request) {
     );
 
     if (!targetResponse.ok) {
-      const details = await targetResponse.text();
+      const details =
+        await targetResponse.text();
 
       console.error(
-        "HANDOFF ElevenLabs target lookup failed:",
+        "HANDOFF target lookup failed:",
         targetResponse.status,
         details,
       );
 
       return NextResponse.json(
-        { error: "Could not retrieve the completed Spanish handoff." },
-        { status: targetResponse.status },
+        {
+          error:
+            "Could not retrieve the completed voice handoff.",
+        },
+        {
+          status: targetResponse.status,
+        },
       );
     }
 
-    const targetData = await targetResponse.json();
+    const targetData =
+      await targetResponse.json();
 
-    if (targetData?.status !== "completed") {
+    if (
+      targetData?.status !==
+      "completed"
+    ) {
       return NextResponse.json(
         {
-          error: "Spanish handoff is not completed yet.",
-          status: targetData?.status ?? "unknown",
+          error:
+            "Recipient voice handoff is not completed yet.",
+          status:
+            targetData?.status ??
+            "unknown",
         },
         { status: 409 },
       );
     }
 
-    const signedAudioUrl = targetData?.outputs?.lossless_audio;
+    const signedAudioUrl =
+      targetData?.outputs
+        ?.lossless_audio;
 
     if (
-      typeof signedAudioUrl !== "string" ||
-      !signedAudioUrl.startsWith("https://")
+      typeof signedAudioUrl !==
+        "string" ||
+      !signedAudioUrl.startsWith(
+        "https://",
+      )
     ) {
       return NextResponse.json(
-        { error: "Spanish audio output is unavailable." },
+        {
+          error:
+            "Translated audio output is unavailable.",
+        },
         { status: 404 },
       );
     }
 
-    const audioResponse = await fetch(signedAudioUrl, {
-      cache: "no-store",
-    });
+    const audioResponse =
+      await fetch(
+        signedAudioUrl,
+        {
+          cache: "no-store",
+        },
+      );
 
     if (!audioResponse.ok) {
       return NextResponse.json(
-        { error: "Could not download the Spanish audio output." },
+        {
+          error:
+            "Could not download the translated audio.",
+        },
         { status: 502 },
       );
     }
 
-    const audioBuffer = await audioResponse.arrayBuffer();
+    const audioBuffer =
+      await audioResponse.arrayBuffer();
 
-    const pathname = `handoff/spanish/${crypto.randomUUID()}.flac`;
+    const contentType =
+      audioResponse.headers.get(
+        "content-type",
+      ) || "audio/flac";
+
+    const pathname =
+      `handoff/translated/${crypto.randomUUID()}.flac`;
 
     const blob = await put(
       pathname,
@@ -102,7 +140,7 @@ export async function POST(request: Request) {
       {
         access: "public",
         addRandomSuffix: false,
-        contentType: "audio/flac",
+        contentType,
       },
     );
 
@@ -111,10 +149,16 @@ export async function POST(request: Request) {
       pathname: blob.pathname,
     });
   } catch (error) {
-    console.error("HANDOFF Spanish media storage error:", error);
+    console.error(
+      "HANDOFF translated media storage error:",
+      error,
+    );
 
     return NextResponse.json(
-      { error: "Could not save the Spanish handoff audio." },
+      {
+        error:
+          "Could not save the recipient voice handoff.",
+      },
       { status: 500 },
     );
   }
