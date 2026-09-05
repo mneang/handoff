@@ -666,25 +666,29 @@ export default function Home() {
             className="mb-6 w-full rounded-xl border border-slate-700 bg-slate-950 px-4 py-3 text-white outline-none transition focus:border-emerald-400 disabled:opacity-60"
           />
 
-          <div className="mb-6 grid grid-cols-2 gap-3">
-            <div>
-              <p className="mb-2 text-sm font-medium text-slate-300">
-                I&apos;m speaking
-              </p>
+          <div className="mb-6">
+            <p className="mb-2 text-sm font-medium text-slate-300">
+              Voice handoff language
+            </p>
 
-              <div className="rounded-xl border border-slate-700 bg-slate-950 px-4 py-3 text-sm sm:text-base">
+            <div className="flex items-center justify-between gap-3 rounded-xl border border-slate-700 bg-slate-950 px-4 py-3">
+              <span className="font-medium text-white">
                 English
-              </div>
-            </div>
+              </span>
 
-            <div>
-              <p className="mb-2 text-sm font-medium text-slate-300">
-                Recipient language
-              </p>
+              <span
+                aria-hidden="true"
+                className="text-emerald-400"
+              >
+                →
+              </span>
 
-              <div className="rounded-xl border border-slate-700 bg-slate-950 px-4 py-3 text-sm sm:text-base">
-                Español (Spanish)
-              </div>
+              <span className="text-right font-medium text-white">
+                Español
+                <span className="ml-1 text-sm font-normal text-slate-500">
+                  (Spanish)
+                </span>
+              </span>
             </div>
           </div>
 
