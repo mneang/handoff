@@ -13,6 +13,7 @@ type AppStatus =
 
 type ProcessStage =
   | "idle"
+  | "cleaning"
   | "saving"
   | "dubbing"
   | "ready";
@@ -67,6 +68,9 @@ export default function Home() {
     languageId: string;
   } | null>(null);
 
+  const [cleanedRecordingBlob, setCleanedRecordingBlob] =
+    useState<Blob | null>(null);
+
   const mediaRecorderRef =
     useRef<MediaRecorder | null>(null);
 
@@ -104,6 +108,7 @@ export default function Home() {
       setTagUrl(null);
       setSavedOriginalAudioUrl(null);
       setCompletedDub(null);
+      setCleanedRecordingBlob(null);
       setProcessStage("idle");
       setRecordingSeconds(0);
 
@@ -239,12 +244,12 @@ export default function Home() {
     applianceName: string,
   ) {
     setMessage(
-      "Spanish handoff created. Saving it for the recipient...",
+      `${targetLanguage === "es" ? "Spanish" : "English"} handoff created. Saving it for the recipient...`,
     );
 
     const spanishSaveResponse =
       await fetch(
-        "/api/media/spanish",
+        "/api/media/translated",
         {
           method: "POST",
           headers: {
@@ -400,6 +405,89 @@ export default function Home() {
           },
         );
 
+      let processingFile = file;
+
+      if (cleanedRecordingBlob) {
+        processingFile = new File(
+          [cleanedRecordingBlob],
+          "handoff-cleaned.mp3",
+          {
+            type:
+              cleanedRecordingBlob.type ||
+              "audio/mpeg",
+          },
+        );
+      } else {
+        setProcessStage("cleaning");
+
+        setMessage(
+          "Enhancing voice clarity with ElevenLabs...",
+        );
+
+        const isolationFormData =
+          new FormData();
+
+        isolationFormData.append(
+          "file",
+          file,
+        );
+
+        const isolationResponse =
+          await fetch(
+            "/api/audio/isolate",
+            {
+              method: "POST",
+              body: isolationFormData,
+            },
+          );
+
+        if (!isolationResponse.ok) {
+          let errorMessage =
+            "Could not enhance the voice recording.";
+
+          try {
+            const isolationError =
+              await isolationResponse.json();
+
+            errorMessage =
+              isolationError?.error ||
+              errorMessage;
+          } catch {
+            // Keep the default message.
+          }
+
+          throw new Error(
+            errorMessage,
+          );
+        }
+
+        const isolatedBlob =
+          await isolationResponse.blob();
+
+        if (
+          isolatedBlob.size <= 0
+        ) {
+          throw new Error(
+            "ElevenLabs returned an empty enhanced recording.",
+          );
+        }
+
+        setCleanedRecordingBlob(
+          isolatedBlob,
+        );
+
+        processingFile =
+          new File(
+            [isolatedBlob],
+            "handoff-cleaned.mp3",
+            {
+              type:
+                isolatedBlob.type ||
+                "audio/mpeg",
+            },
+          );
+      }
+
       let originalAudioUrl:
         string;
 
@@ -418,7 +506,7 @@ export default function Home() {
 
         originalFormData.append(
           "file",
-          file,
+          processingFile,
         );
 
         const uploadResponse =
@@ -483,7 +571,7 @@ export default function Home() {
 
       formData.append(
         "file",
-        file,
+        processingFile,
       );
 
       formData.append(
@@ -597,7 +685,7 @@ export default function Home() {
         }
 
         setMessage(
-          `Creating Spanish handoff... ${
+          `Creating ${targetLanguage === "es" ? "Spanish" : "English"} handoff... ${
             statusData.status ??
             "processing"
           }`,
@@ -649,6 +737,7 @@ export default function Home() {
     );
 
     setCompletedDub(null);
+    setCleanedRecordingBlob(null);
 
     setRecordingSeconds(0);
     setMessage("");
@@ -886,23 +975,40 @@ export default function Home() {
 
               <div className="mt-4 space-y-3">
                 <ProcessStep
-                  label="Save original recording"
+                  label="Enhance voice clarity"
                   state={
-                    processStage ===
-                    "saving"
+                    processStage === "cleaning"
                       ? "active"
-                      : "complete"
+                      : processStage === "idle"
+                        ? "waiting"
+                        : "complete"
                   }
                 />
 
                 <ProcessStep
-                  label="Create Spanish voice handoff"
+                  label="Save enhanced recording"
                   state={
-                    processStage ===
-                    "dubbing"
+                    processStage === "saving"
                       ? "active"
-                      : processStage ===
-                          "saving"
+                      : processStage === "cleaning" ||
+                          processStage === "idle"
+                        ? "waiting"
+                        : "complete"
+                  }
+                />
+
+                <ProcessStep
+                  label={`Create ${
+                    targetLanguage === "es"
+                      ? "Spanish"
+                      : "English"
+                  } voice handoff`}
+                  state={
+                    processStage === "dubbing"
+                      ? "active"
+                      : processStage === "cleaning" ||
+                          processStage === "saving" ||
+                          processStage === "idle"
                         ? "waiting"
                         : "complete"
                   }
@@ -953,13 +1059,20 @@ export default function Home() {
                 </h2>
 
                 <p className="mt-1 text-sm text-slate-400">
-                  English original ·
-                  Español (Spanish)
+                  {sourceLanguage === "en"
+                    ? "English original"
+                    : "Español original"}{" · "}
+                  {targetLanguage === "en"
+                    ? "English handoff"
+                    : "Español (Spanish) handoff"}
                 </p>
 
                 <div className="mt-5">
                   <p className="mb-2 text-xs font-semibold uppercase tracking-wider text-slate-500">
-                    Review Spanish
+                    Review{" "}
+                    {targetLanguage === "es"
+                      ? "Spanish"
+                      : "English"}
                   </p>
 
                   <audio
