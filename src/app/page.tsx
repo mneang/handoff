@@ -56,6 +56,9 @@ export default function Home() {
   const [message, setMessage] =
     useState("");
 
+  const [quotaBlocked, setQuotaBlocked] =
+    useState(false);
+
   const [savedOriginalAudioUrl, setSavedOriginalAudioUrl] =
     useState<string | null>(null);
 
@@ -99,6 +102,7 @@ export default function Home() {
       clearRecordingTimers();
 
       setMessage("");
+      setQuotaBlocked(false);
       setDubbedAudioUrl(null);
       setRecipientUrl(null);
       setTagUrl(null);
@@ -743,13 +747,27 @@ export default function Home() {
     } catch (error) {
       console.error(error);
 
+      const errorMessage =
+        error instanceof Error
+          ? error.message
+          : "Something went wrong.";
+
+      const isQuotaError =
+        errorMessage.includes("quota_exceeded");
+
       setStatus("error");
 
-      setMessage(
-        error instanceof Error
-          ? `${error.message} Your recording is still here — you can try again.`
-          : "Something went wrong. Your recording is still here — you can try again.",
-      );
+      if (isQuotaError) {
+        setQuotaBlocked(true);
+
+        setMessage(
+          "Live ElevenLabs dubbing is temporarily unavailable in this demo workspace. Your recording is still here. You can still explore a verified HANDOFF created with ElevenLabs.",
+        );
+      } else {
+        setMessage(
+          `${errorMessage} Your recording is still here — you can try again.`,
+        );
+      }
     }
   }
 
@@ -786,6 +804,7 @@ export default function Home() {
 
     setRecordingSeconds(0);
     setMessage("");
+    setQuotaBlocked(false);
     setProcessStage("idle");
     setStatus("idle");
   }
@@ -999,9 +1018,18 @@ export default function Home() {
               "recording" && (
               <button
                 type="button"
-                onClick={
-                  createHandoff
-                }
+                onClick={() => {
+                  if (quotaBlocked) {
+                    window.open(
+                      "/sample",
+                      "_blank",
+                      "noopener,noreferrer",
+                    );
+                    return;
+                  }
+
+                  void createHandoff();
+                }}
                 disabled={
                   status ===
                   "dubbing"
@@ -1013,7 +1041,9 @@ export default function Home() {
                   ? "Creating HANDOFF..."
                   : status ===
                       "error"
-                    ? "Try again"
+                    ? quotaBlocked
+                      ? "View verified sample HANDOFF"
+                      : "Try again"
                     : "Create HANDOFF"}
               </button>
             )}
