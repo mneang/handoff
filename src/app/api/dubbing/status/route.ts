@@ -2,13 +2,19 @@ import { NextResponse } from "next/server";
 
 export const runtime = "nodejs";
 
+type ElevenLabsError = {
+  code?: string;
+  message?: string;
+  [key: string]: unknown;
+};
+
 export async function GET(request: Request) {
   const apiKey = process.env.ELEVENLABS_API_KEY;
 
   if (!apiKey) {
     return NextResponse.json(
       { error: "ELEVENLABS_API_KEY is not configured." },
-      { status: 500 }
+      { status: 500 },
     );
   }
 
@@ -20,14 +26,14 @@ export async function GET(request: Request) {
   if (!projectId || !languageId) {
     return NextResponse.json(
       { error: "projectId and languageId are required." },
-      { status: 400 }
+      { status: 400 },
     );
   }
 
   try {
-    const response = await fetch(
+    const languageResponse = await fetch(
       `https://api.elevenlabs.io/v1/dubbing/project/${encodeURIComponent(
-        projectId
+        projectId,
       )}/language/${encodeURIComponent(languageId)}`,
       {
         method: "GET",
@@ -35,49 +41,116 @@ export async function GET(request: Request) {
           "xi-api-key": apiKey,
         },
         cache: "no-store",
-      }
+      },
     );
 
-    const rawResponse = await response.text();
+    const rawLanguageResponse =
+      await languageResponse.text();
 
-    let data: Record<string, unknown>;
+    let languageData: Record<string, unknown>;
 
     try {
-      data = JSON.parse(rawResponse);
+      languageData = JSON.parse(rawLanguageResponse);
     } catch {
-      data = { raw: rawResponse };
+      languageData = {
+        raw: rawLanguageResponse,
+      };
     }
 
-    if (!response.ok) {
+    if (!languageResponse.ok) {
       return NextResponse.json(
         {
-          error: "ElevenLabs could not retrieve the dubbing status.",
-          details: data,
+          error:
+            "ElevenLabs could not retrieve the dubbing status.",
+          details: languageData,
         },
-        { status: response.status }
+        { status: languageResponse.status },
       );
     }
 
-    const outputs = data.outputs as
+    const outputs = languageData.outputs as
       | {
           lossless_audio?: string;
         }
       | undefined;
 
+    const languageError =
+      (languageData.error as ElevenLabsError | null) ??
+      null;
+
+    let projectError: ElevenLabsError | null = null;
+    let projectStatus: unknown = null;
+    let projectWarnings: unknown[] = [];
+
+    if (
+      languageData.status === "failed" &&
+      languageError?.code === "project_failed"
+    ) {
+      const projectResponse = await fetch(
+        `https://api.elevenlabs.io/v1/dubbing/project/${encodeURIComponent(
+          projectId,
+        )}`,
+        {
+          method: "GET",
+          headers: {
+            "xi-api-key": apiKey,
+          },
+          cache: "no-store",
+        },
+      );
+
+      if (projectResponse.ok) {
+        const projectData = await projectResponse.json();
+
+        projectStatus =
+          projectData?.status ?? null;
+
+        projectError =
+          projectData?.error ?? null;
+
+        projectWarnings = Array.isArray(
+          projectData?.warnings,
+        )
+          ? projectData.warnings
+          : [];
+      }
+    }
+
     return NextResponse.json({
-      status: data.status ?? "unknown",
-      projectId: data.project_id ?? projectId,
-      languageId: data.language_id ?? languageId,
-      targetLanguage: data.target_language ?? null,
-      audioUrl: outputs?.lossless_audio ?? null,
-      warnings: data.warnings ?? [],
+      status:
+        languageData.status ?? "unknown",
+      projectId:
+        languageData.project_id ?? projectId,
+      languageId:
+        languageData.language_id ?? languageId,
+      targetLanguage:
+        languageData.target_language ?? null,
+      audioUrl:
+        outputs?.lossless_audio ?? null,
+
+      failure: languageError,
+      warnings: Array.isArray(
+        languageData.warnings,
+      )
+        ? languageData.warnings
+        : [],
+
+      projectStatus,
+      projectFailure: projectError,
+      projectWarnings,
     });
   } catch (error) {
-    console.error("HANDOFF dubbing status error:", error);
+    console.error(
+      "HANDOFF dubbing status error:",
+      error,
+    );
 
     return NextResponse.json(
-      { error: "Unexpected server error while checking the dub." },
-      { status: 500 }
+      {
+        error:
+          "Unexpected server error while checking the dub.",
+      },
+      { status: 500 },
     );
   }
 }

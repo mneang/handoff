@@ -699,8 +699,33 @@ export default function Home() {
           statusData.status ===
           "failed"
         ) {
+          const languageFailure =
+            statusData?.failure;
+
+          const projectFailure =
+            statusData?.projectFailure;
+
+          const failureCode =
+            projectFailure?.code ||
+            languageFailure?.code;
+
+          const failureMessage =
+            projectFailure?.message ||
+            languageFailure?.message;
+
+          const details = [
+            failureCode
+              ? `code: ${failureCode}`
+              : null,
+            failureMessage || null,
+          ]
+            .filter(Boolean)
+            .join(" — ");
+
           throw new Error(
-            "ElevenLabs reported that the dubbing job failed.",
+            details
+              ? `ElevenLabs dubbing failed — ${details}`
+              : "ElevenLabs reported that the dubbing job failed without a detailed reason.",
           );
         }
 
