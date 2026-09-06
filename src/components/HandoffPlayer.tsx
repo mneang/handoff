@@ -189,10 +189,14 @@ export default function HandoffPlayer({
           </span>
 
           <span className="block text-xs font-normal opacity-70">
-            Source
+            Original
           </span>
         </button>
       </div>
+
+      <p className="mt-3 text-xs leading-5 text-slate-500">
+        Recipient language is shown first. Audio and readable text switch together.
+      </p>
 
       <section
         className="mt-5"
@@ -256,7 +260,7 @@ export default function HandoffPlayer({
           </h2>
 
           <span className="text-xs text-slate-500">
-            Text alternative
+            Readable version
           </span>
         </div>
 
