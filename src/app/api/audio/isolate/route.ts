@@ -74,8 +74,10 @@ export async function POST(request: Request) {
 
       return NextResponse.json(
         {
-          error:
-            "ElevenLabs could not enhance the voice recording.",
+          error: `Voice enhancement failed (${response.status}): ${details.slice(
+            0,
+            600,
+          )}`,
         },
         { status: response.status },
       );
@@ -83,9 +85,15 @@ export async function POST(request: Request) {
 
     const audio = await response.arrayBuffer();
 
+    if (audio.byteLength === 0) {
+      return NextResponse.json(
+        { error: "ElevenLabs returned an empty enhanced audio file." },
+        { status: 502 },
+      );
+    }
+
     const contentType =
-      response.headers.get("content-type") ||
-      "audio/mpeg";
+      response.headers.get("content-type") || "audio/mpeg";
 
     return new Response(audio, {
       status: 200,
@@ -103,7 +111,9 @@ export async function POST(request: Request) {
     return NextResponse.json(
       {
         error:
-          "Unexpected error while enhancing the voice recording.",
+          error instanceof Error
+            ? `Voice enhancement error: ${error.message}`
+            : "Unexpected error while enhancing the voice recording.",
       },
       { status: 500 },
     );
