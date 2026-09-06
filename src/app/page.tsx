@@ -987,6 +987,31 @@ export default function Home() {
               The inlet hose is inside the drum.”
             </p>
 
+            <div className="mt-4 grid gap-3 sm:grid-cols-2">
+              <div className="rounded-xl border border-emerald-400/20 bg-emerald-400/5 p-3">
+                <p className="text-xs font-semibold uppercase tracking-wider text-emerald-300">
+                  Specific to this appliance
+                </p>
+
+                <p className="mt-1.5 text-xs leading-5 text-slate-400">
+                  Capture what was repaired, tested, packed,
+                  and how this exact item should be started.
+                </p>
+              </div>
+
+              <div className="rounded-xl border border-slate-800 bg-slate-900/60 p-3">
+                <p className="text-xs font-semibold uppercase tracking-wider text-slate-300">
+                  Privacy by default
+                </p>
+
+                <p className="mt-1.5 text-xs leading-5 text-slate-500">
+                  No recipient account is required.
+                  Avoid names, addresses, phone numbers,
+                  or sensitive personal details.
+                </p>
+              </div>
+            </div>
+
             <div className="mt-5 flex flex-wrap items-center gap-3">
               {status !==
                 "recording" && (
