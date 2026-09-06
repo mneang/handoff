@@ -811,6 +811,14 @@ export default function Home() {
             Record useful details about a refurbished appliance
             and turn them into a spoken handoff for its next home.
           </p>
+
+          <a
+            href="/sample"
+            className="mt-4 inline-flex items-center gap-2 text-sm font-semibold text-emerald-300 transition hover:text-emerald-200"
+          >
+            View a sample recipient HANDOFF
+            <span aria-hidden="true">→</span>
+          </a>
         </header>
 
         <section className="rounded-3xl border border-slate-800 bg-slate-900 p-5 shadow-2xl sm:p-6">
