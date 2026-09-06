@@ -1014,7 +1014,8 @@ export default function Home() {
 
             <div className="mt-5 flex flex-wrap items-center gap-3">
               {status !==
-                "recording" && (
+                "recording" &&
+                !recordingBlob && (
                 <button
                   type="button"
                   onClick={
@@ -1087,38 +1088,59 @@ export default function Home() {
           </div>
 
           {recordingBlob &&
-            status !==
-              "recording" && (
+            status !== "recording" &&
+            !quotaBlocked && (
               <button
                 type="button"
                 onClick={() => {
-                  if (quotaBlocked) {
-                    window.open(
-                      "/sample",
-                      "_blank",
-                      "noopener,noreferrer",
-                    );
-                    return;
-                  }
-
                   void createHandoff();
                 }}
                 disabled={
-                  status ===
-                  "dubbing"
+                  status === "dubbing"
                 }
                 className="mt-5 w-full rounded-xl bg-white px-5 py-4 font-semibold text-slate-950 transition hover:bg-slate-200 disabled:cursor-wait disabled:opacity-60"
               >
-                {status ===
-                "dubbing"
+                {status === "dubbing"
                   ? "Creating HANDOFF..."
-                  : status ===
-                      "error"
-                    ? quotaBlocked
-                      ? "View verified sample HANDOFF"
-                      : "Try again"
+                  : status === "error"
+                    ? "Try again"
                     : "Create HANDOFF"}
               </button>
+            )}
+
+          {recordingBlob &&
+            status !== "recording" &&
+            quotaBlocked && (
+              <div className="mt-5 rounded-2xl border border-amber-400/20 bg-amber-400/5 p-4 sm:p-5">
+                <p className="text-sm font-semibold text-amber-100">
+                  Live generation is unavailable in this demo workspace
+                </p>
+
+                <p className="mt-2 text-sm leading-6 text-slate-400">
+                  Your recording is still here. You can explore a verified
+                  HANDOFF created with the same ElevenLabs pipeline.
+                </p>
+
+                <div className="mt-4 flex flex-wrap gap-3">
+                  <a
+                    href="/sample"
+                    target="_blank"
+                    rel="noreferrer"
+                    className="inline-flex rounded-xl bg-emerald-400 px-4 py-3 text-sm font-semibold text-slate-950 transition hover:bg-emerald-300"
+                  >
+                    Open verified HANDOFF ↗
+                  </a>
+
+                  <a
+                    href="/sample/tag"
+                    target="_blank"
+                    rel="noreferrer"
+                    className="inline-flex rounded-xl border border-slate-700 px-4 py-3 text-sm font-semibold text-slate-200 transition hover:bg-slate-800"
+                  >
+                    View printable tag ↗
+                  </a>
+                </div>
+              </div>
             )}
 
           {status ===
@@ -1192,7 +1214,8 @@ export default function Home() {
             </div>
           )}
 
-          {message && (
+          {message &&
+            !quotaBlocked && (
             <p
               aria-live="polite"
               className={`mt-4 text-sm ${
