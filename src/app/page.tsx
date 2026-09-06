@@ -56,11 +56,6 @@ export default function Home() {
   const [message, setMessage] =
     useState("");
 
-  /*
-   * Uruguay resilience:
-   * if a later step fails, we keep successful earlier work
-   * instead of starting the whole pipeline again.
-   */
   const [savedOriginalAudioUrl, setSavedOriginalAudioUrl] =
     useState<string | null>(null);
 
@@ -278,40 +273,6 @@ export default function Home() {
       );
     }
 
-    const transcriptSaveResponse = await fetch(
-      "/api/media/transcript",
-      {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({
-          sourceText:
-            transcriptData.sourceText,
-          translatedText:
-            transcriptData.translatedText,
-          sourceLanguage,
-          targetLanguage,
-        }),
-      },
-    );
-
-    const transcriptSaveData =
-      await transcriptSaveResponse.json();
-
-    if (
-      !transcriptSaveResponse.ok ||
-      !transcriptSaveData.url
-    ) {
-      throw new Error(
-        transcriptSaveData?.error ||
-          "Could not save the readable handoff.",
-      );
-    }
-
-    const transcriptUrl =
-      transcriptSaveData.url as string;
-
     setMessage(
       `${targetName} handoff ready. Preparing recipient audio...`,
     );
@@ -347,74 +308,57 @@ export default function Home() {
     const translatedAudioUrl =
       translatedSaveData.url as string;
 
+    setMessage(
+      "Creating the HANDOFF record...",
+    );
+
+    const manifestResponse = await fetch(
+      "/api/handoff/manifest",
+      {
+        method: "POST",
+        headers: {
+          "Content-Type":
+            "application/json",
+        },
+        body: JSON.stringify({
+          appliance:
+            applianceName,
+          sourceLanguage,
+          targetLanguage,
+          originalAudioUrl,
+          translatedAudioUrl,
+          sourceText:
+            transcriptData.sourceText,
+          translatedText:
+            transcriptData.translatedText,
+        }),
+      },
+    );
+
+    const manifestData =
+      await manifestResponse.json();
+
+    if (
+      !manifestResponse.ok ||
+      !manifestData.id
+    ) {
+      throw new Error(
+        manifestData?.error ||
+          "Could not create the HANDOFF record.",
+      );
+    }
+
+    const handoffId =
+      manifestData.id as string;
+
     const handoffUrl = new URL(
-      "/h",
+      `/h/${handoffId}`,
       window.location.origin,
-    );
-
-    handoffUrl.searchParams.set(
-      "appliance",
-      applianceName,
-    );
-
-    handoffUrl.searchParams.set(
-      "originalAudioUrl",
-      originalAudioUrl,
-    );
-
-    handoffUrl.searchParams.set(
-      "translatedAudioUrl",
-      translatedAudioUrl,
-    );
-
-    handoffUrl.searchParams.set(
-      "transcriptUrl",
-      transcriptUrl,
-    );
-
-    handoffUrl.searchParams.set(
-      "sourceLanguage",
-      sourceLanguage,
-    );
-
-    handoffUrl.searchParams.set(
-      "targetLanguage",
-      targetLanguage,
     );
 
     const printableTagUrl = new URL(
-      "/tag",
+      `/tag/${handoffId}`,
       window.location.origin,
-    );
-
-    printableTagUrl.searchParams.set(
-      "appliance",
-      applianceName,
-    );
-
-    printableTagUrl.searchParams.set(
-      "originalAudioUrl",
-      originalAudioUrl,
-    );
-
-    printableTagUrl.searchParams.set(
-      "translatedAudioUrl",
-      translatedAudioUrl,
-    );
-
-    printableTagUrl.searchParams.set(
-      "transcriptUrl",
-      transcriptUrl,
-    );
-
-    printableTagUrl.searchParams.set(
-      "sourceLanguage",
-      sourceLanguage,
-    );
-
-    printableTagUrl.searchParams.set(
-      "targetLanguage",
-      targetLanguage,
     );
 
     setDubbedAudioUrl(
