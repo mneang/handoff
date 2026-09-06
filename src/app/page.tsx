@@ -405,10 +405,10 @@ export default function Home() {
       return;
     }
 
-    if (recordingSeconds < 3) {
+    if (recordingSeconds < 6) {
       setStatus("error");
       setMessage(
-        "The recording is too short. Record at least 3 seconds so the recipient gets a useful handoff.",
+        "The recording is too short. Record at least 6 seconds so the recipient gets a clear, useful handoff.",
       );
       return;
     }
@@ -818,26 +818,65 @@ export default function Home() {
     <main className="min-h-screen bg-slate-950 px-5 py-7 text-white sm:px-6 sm:py-9">
       <div className="mx-auto max-w-2xl">
         <header className="mb-7">
-          <p className="mb-2 text-xs font-bold uppercase tracking-[0.28em] text-emerald-400">
-            HANDOFF
-          </p>
+          <div className="mb-5 flex items-center gap-3">
+            <div
+              aria-hidden="true"
+              className="flex h-10 w-10 items-center justify-center rounded-2xl border border-emerald-400/30 bg-emerald-400/10 text-lg font-bold text-emerald-300"
+            >
+              H
+            </div>
 
-          <h1 className="text-3xl font-semibold tracking-tight sm:text-4xl">
-            Pass on more than the appliance.
+            <div>
+              <p className="text-xs font-bold uppercase tracking-[0.28em] text-emerald-400">
+                HANDOFF
+              </p>
+
+              <p className="mt-0.5 text-xs text-slate-500">
+                Knowledge that travels with the gift
+              </p>
+            </div>
+          </div>
+
+          <h1 className="max-w-xl text-3xl font-semibold tracking-tight sm:text-5xl sm:leading-[1.08]">
+            Give the appliance.
+            <span className="block text-emerald-300">
+              Pass on the know-how.
+            </span>
           </h1>
 
-          <p className="mt-3 max-w-xl text-base leading-7 text-slate-400">
-            Record useful details about a refurbished appliance
-            and turn them into a spoken handoff for its next home.
+          <p className="mt-4 max-w-xl text-base leading-7 text-slate-400">
+            A refurbisher speaks once. HANDOFF cleans the voice,
+            translates it for the recipient, creates readable text,
+            and puts the knowledge on a QR tag that stays with the appliance.
           </p>
 
-          <a
-            href="/sample"
-            className="mt-4 inline-flex items-center gap-2 text-sm font-semibold text-emerald-300 transition hover:text-emerald-200"
-          >
-            View a sample recipient HANDOFF
-            <span aria-hidden="true">→</span>
-          </a>
+          <div className="mt-5 flex flex-wrap gap-2">
+            <span className="rounded-full border border-slate-800 bg-slate-900 px-3 py-1.5 text-xs font-medium text-slate-300">
+              1 · Speak
+            </span>
+
+            <span className="rounded-full border border-slate-800 bg-slate-900 px-3 py-1.5 text-xs font-medium text-slate-300">
+              2 · Translate
+            </span>
+
+            <span className="rounded-full border border-slate-800 bg-slate-900 px-3 py-1.5 text-xs font-medium text-slate-300">
+              3 · Attach QR
+            </span>
+          </div>
+
+          <div className="mt-5 flex flex-wrap items-center gap-3">
+            <a
+              href="/sample"
+              className="inline-flex items-center gap-2 rounded-xl bg-emerald-400 px-4 py-3 text-sm font-semibold text-slate-950 transition hover:bg-emerald-300"
+            >
+              Experience a real HANDOFF
+              <span aria-hidden="true">→</span>
+            </a>
+
+            <p className="text-xs leading-5 text-slate-500">
+              Voice Isolation + Dubbing powered by ElevenLabs
+            </p>
+          </div>
         </header>
 
         <section className="rounded-3xl border border-slate-800 bg-slate-900 p-5 shadow-2xl sm:p-6">
