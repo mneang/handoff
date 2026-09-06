@@ -837,6 +837,10 @@ export default function Home() {
             </div>
           </div>
 
+          <p className="mb-3 inline-flex rounded-full border border-emerald-400/20 bg-emerald-400/10 px-3 py-1.5 text-xs font-semibold text-emerald-300">
+            For donated & refurbished appliances
+          </p>
+
           <h1 className="max-w-xl text-3xl font-semibold tracking-tight sm:text-5xl sm:leading-[1.08]">
             Give the appliance.
             <span className="block text-emerald-300">
@@ -852,15 +856,15 @@ export default function Home() {
 
           <div className="mt-5 flex flex-wrap gap-2">
             <span className="rounded-full border border-slate-800 bg-slate-900 px-3 py-1.5 text-xs font-medium text-slate-300">
-              1 · Speak
+              1 · Record
             </span>
 
             <span className="rounded-full border border-slate-800 bg-slate-900 px-3 py-1.5 text-xs font-medium text-slate-300">
-              2 · Translate
+              2 · Clean + dub
             </span>
 
             <span className="rounded-full border border-slate-800 bg-slate-900 px-3 py-1.5 text-xs font-medium text-slate-300">
-              3 · Attach QR
+              3 · Scan + listen/read
             </span>
           </div>
 
@@ -873,9 +877,14 @@ export default function Home() {
               <span aria-hidden="true">→</span>
             </a>
 
-            <p className="text-xs leading-5 text-slate-500">
-              Voice Isolation + Dubbing powered by ElevenLabs
-            </p>
+            <div className="rounded-xl border border-slate-800 bg-slate-900 px-3 py-2">
+              <p className="text-xs font-semibold text-slate-300">
+                Powered by ElevenLabs
+              </p>
+              <p className="mt-0.5 text-xs text-slate-500">
+                Voice Isolation · Dubbing v2 · bilingual voice + text
+              </p>
+            </div>
           </div>
         </header>
 
